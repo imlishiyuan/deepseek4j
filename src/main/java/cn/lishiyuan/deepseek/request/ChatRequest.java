@@ -1,4 +1,4 @@
-package com.bigbrotherlee.deepseek.request;
+package cn.lishiyuan.deepseek.request;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;

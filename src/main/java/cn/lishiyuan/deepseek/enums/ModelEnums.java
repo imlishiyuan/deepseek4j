@@ -1,4 +1,4 @@
-package com.bigbrotherlee.deepseek.enums;
+package cn.lishiyuan.deepseek.enums;
 
 import lombok.AllArgsConstructor;
 

@@ -1,13 +1,13 @@
-package com.bigbrotherlee.deepseek;
+package cn.lishiyuan.deepseek;
 
-import com.bigbrotherlee.deepseek.enums.ModelEnums;
-import com.bigbrotherlee.deepseek.enums.RoleEnums;
-import com.bigbrotherlee.deepseek.request.ChatRequest;
-import com.bigbrotherlee.deepseek.request.FimRequest;
-import com.bigbrotherlee.deepseek.response.BalanceInfoResponse;
-import com.bigbrotherlee.deepseek.response.ChatResponse;
-import com.bigbrotherlee.deepseek.response.FimResponse;
-import com.bigbrotherlee.deepseek.response.ListModelResponse;
+import cn.lishiyuan.deepseek.enums.ModelEnums;
+import cn.lishiyuan.deepseek.request.ChatRequest;
+import cn.lishiyuan.deepseek.request.FimRequest;
+import cn.lishiyuan.deepseek.response.ChatResponse;
+import cn.lishiyuan.deepseek.response.FimResponse;
+import cn.lishiyuan.deepseek.response.ListModelResponse;
+import cn.lishiyuan.deepseek.enums.RoleEnums;
+import cn.lishiyuan.deepseek.response.BalanceInfoResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;

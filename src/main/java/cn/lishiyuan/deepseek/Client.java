@@ -1,8 +1,8 @@
-package com.bigbrotherlee.deepseek;
+package cn.lishiyuan.deepseek;
 
-import com.bigbrotherlee.deepseek.request.ChatRequest;
-import com.bigbrotherlee.deepseek.request.FimRequest;
-import com.bigbrotherlee.deepseek.response.*;
+import cn.lishiyuan.deepseek.request.ChatRequest;
+import cn.lishiyuan.deepseek.request.FimRequest;
+import cn.lishiyuan.deepseek.response.*;
 
 import java.util.function.Consumer;
 

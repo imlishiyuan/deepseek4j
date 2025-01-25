@@ -1,10 +1,10 @@
-package com.bigbrotherlee.deepseek;
+package cn.lishiyuan.deepseek;
 
+import cn.lishiyuan.deepseek.e.DeepSeekException;
+import cn.lishiyuan.deepseek.request.ChatRequest;
+import cn.lishiyuan.deepseek.request.FimRequest;
+import cn.lishiyuan.deepseek.response.*;
 import com.alibaba.fastjson2.JSON;
-import com.bigbrotherlee.deepseek.e.DeepSeekException;
-import com.bigbrotherlee.deepseek.request.ChatRequest;
-import com.bigbrotherlee.deepseek.request.FimRequest;
-import com.bigbrotherlee.deepseek.response.*;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 

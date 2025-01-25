@@ -1,11 +1,9 @@
-package com.bigbrotherlee.deepseek.request;
+package cn.lishiyuan.deepseek.request;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import com.bigbrotherlee.deepseek.enums.RoleEnums;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class FimRequest {

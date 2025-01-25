@@ -1,4 +1,4 @@
-package com.bigbrotherlee.deepseek.response;
+package cn.lishiyuan.deepseek.response;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class StreamChatResponse {
+public class ChatResponse {
     private String id;
     private Integer created;
     private String model;
@@ -15,7 +15,7 @@ public class StreamChatResponse {
 
     @JSONField(name = "system_fingerprint")
     private String systemFingerprint;
-    // chat.completion.chunk
+    // chat.completion
     private String object;
 
     @JSONField(name = "usage")
@@ -29,7 +29,7 @@ public class StreamChatResponse {
         @JSONField(name = "index")
         private Integer index;
 
-        @JSONField(name = "delta")
+        @JSONField(name = "message")
         private Message message;
 
         @JSONField(name = "logprobs")

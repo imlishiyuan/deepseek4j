@@ -1,4 +1,4 @@
-package com.bigbrotherlee.deepseek.e;
+package cn.lishiyuan.deepseek.e;
 
 public class DeepSeekException extends RuntimeException{
     public DeepSeekException() {

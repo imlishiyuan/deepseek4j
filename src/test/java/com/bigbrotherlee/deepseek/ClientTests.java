@@ -66,9 +66,7 @@ public class ClientTests {
 
         List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
         ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-        client.streamChat(chatRequest,chatResponse -> {
-            Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空");
-        });
+        client.streamChat(chatRequest,chatResponse -> Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空"));
     }
 
     @Test
@@ -83,9 +81,7 @@ public class ClientTests {
     @DisplayName("测试流FIM")
     public void testStreamFIM(){
         FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-        client.streamFim(fimRequest, fimResponse -> {
-            Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
-        });
+        client.streamFim(fimRequest, fimResponse -> Assertions.assertNotNull(fimResponse,"fimResponse不应该为空"));
     }
 
     @Test

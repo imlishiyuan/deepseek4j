@@ -1,7 +1,6 @@
 package com.bigbrotherlee.deepseek.request;
 
 import com.alibaba.fastjson2.annotation.JSONField;
-import com.bigbrotherlee.deepseek.enums.RoleEnums;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

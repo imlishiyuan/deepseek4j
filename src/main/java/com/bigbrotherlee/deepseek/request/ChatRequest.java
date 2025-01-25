@@ -3,6 +3,7 @@ package com.bigbrotherlee.deepseek.request;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.bigbrotherlee.deepseek.enums.RoleEnums;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class ChatRequest {
 
 
     @Data
+    @Accessors(chain = true)
     public static class Message {
         private String role;
         private String content;

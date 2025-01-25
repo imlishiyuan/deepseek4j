@@ -54,11 +54,38 @@ public class ClientTests {
     }
 
     @Test
+    @DisplayName("测试流对话")
+    public void testStreamChat(){
+        ChatRequest.Message systemMessage = new ChatRequest.Message();
+        systemMessage.setRole(RoleEnums.SYSTEM.code);
+        systemMessage.setContent("You are a helpful assistant");
+
+        ChatRequest.Message userMessage = new ChatRequest.Message();
+        userMessage.setRole(RoleEnums.USER.code);
+        userMessage.setContent("你好");
+
+        List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
+        ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
+        client.streamChat(chatRequest,chatResponse -> {
+            Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空");
+        });
+    }
+
+    @Test
     @DisplayName("测试FIM")
     public void testFIM(){
         FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
         FimResponse fimResponse = client.fim(fimRequest);
         Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
+    }
+
+    @Test
+    @DisplayName("测试流FIM")
+    public void testStreamFIM(){
+        FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
+        client.streamFim(fimRequest, fimResponse -> {
+            Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
+        });
     }
 
     @Test

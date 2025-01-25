@@ -4,21 +4,22 @@ import com.alibaba.fastjson2.JSON;
 import com.bigbrotherlee.deepseek.e.DeepSeekException;
 import com.bigbrotherlee.deepseek.request.ChatRequest;
 import com.bigbrotherlee.deepseek.request.FimRequest;
-import com.bigbrotherlee.deepseek.response.BalanceInfoResponse;
-import com.bigbrotherlee.deepseek.response.ChatResponse;
-import com.bigbrotherlee.deepseek.response.FimResponse;
-import com.bigbrotherlee.deepseek.response.ListModelResponse;
+import com.bigbrotherlee.deepseek.response.*;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
+import java.util.function.Consumer;
 
+@Slf4j
 public class DefualtClient implements Client {
     private static final String DEFAULT_BASE_URL = "https://api.deepseek.com/";
 
@@ -79,10 +80,11 @@ public class DefualtClient implements Client {
     }
 
     @Override
-    public ChatResponse chat(ChatRequest chatRequest) {
+    public ChatResponse chat(ChatRequest request) {
+        request.setStream(Boolean.FALSE);
         HttpRequest.Builder builder = defaultHeader();
         HttpRequest httpRequest = builder
-                .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(chatRequest), StandardCharsets.UTF_8))
+                .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(request), StandardCharsets.UTF_8))
                 .timeout(readTimeout)
                 .uri(URI.create(chatUrl))
                 .build();
@@ -97,7 +99,39 @@ public class DefualtClient implements Client {
     }
 
     @Override
+    public void streamChat(ChatRequest request, Consumer<StreamChatResponse> consumer) {
+        request.setStream(Boolean.TRUE);
+        HttpRequest.Builder builder = defaultHeader();
+        HttpRequest httpRequest = builder
+                .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(request), StandardCharsets.UTF_8))
+                .timeout(readTimeout)
+                .uri(URI.create(chatUrl))
+                .build();
+        client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()).thenAcceptAsync(response -> {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.body()));
+            // 格式 data:
+            // 结束格式 data: [DONE]
+            String line;
+            try{
+                while ((line = reader.readLine()) != null) {
+                    if ("data: [DONE]".equals(line)) {
+                        log.debug("all data is DONE");
+                        break;
+                    }else if (line.startsWith("data: ")) {
+                        String json = line.substring(6);
+                        StreamChatResponse chatResponse = JSON.parseObject(json, StreamChatResponse.class);
+                        consumer.accept(chatResponse);
+                    }
+                }
+            }catch (IOException e){
+                throw new DeepSeekException("接口异常："+e.getMessage(),e);
+            }
+        });
+    }
+
+    @Override
     public FimResponse fim(FimRequest request) {
+        request.setStream(Boolean.FALSE);
         HttpRequest.Builder builder = defaultHeader();
         HttpRequest httpRequest = builder
                 .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(request), StandardCharsets.UTF_8))
@@ -112,6 +146,38 @@ public class DefualtClient implements Client {
         } catch (IOException |InterruptedException e) {
             throw new DeepSeekException("接口异常："+e.getMessage(),e);
         }
+    }
+
+    @Override
+    public void streamFim(FimRequest request, Consumer<StreamFimResponse> consumer) {
+        request.setStream(Boolean.TRUE);
+        HttpRequest.Builder builder = defaultHeader();
+        HttpRequest httpRequest = builder
+                .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(request), StandardCharsets.UTF_8))
+                .timeout(readTimeout)
+                .uri(URI.create(fimUrl))
+                .build();
+
+        client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()).thenAcceptAsync(response -> {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.body()));
+            // 格式 data:
+            // 结束格式 data: [DONE]
+            String line;
+            try{
+                while ((line = reader.readLine()) != null) {
+                    if ("data: [DONE]".equals(line)) {
+                        log.debug("all data is DONE");
+                        break;
+                    }else if (line.startsWith("data: ")) {
+                        String json = line.substring(6);
+                        StreamFimResponse streamFimResponse = JSON.parseObject(json, StreamFimResponse.class);
+                        consumer.accept(streamFimResponse);
+                    }
+                }
+            }catch (IOException e){
+                throw new DeepSeekException("接口异常："+e.getMessage(),e);
+            }
+        }).join();
     }
 
     @Override

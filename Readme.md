@@ -1,5 +1,7 @@
 ## Deepseek4j是一个deepseek的api客户端 ❤ ❤ ❤ 
 
+### required java 17 要求 Java 17
+
 ### quick start
 
 1. add maven dependency 添加依赖

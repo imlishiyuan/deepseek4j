@@ -177,7 +177,7 @@ public class DefualtClient implements Client {
             }catch (IOException e){
                 throw new DeepSeekException("接口异常："+e.getMessage(),e);
             }
-        }).join();
+        });
     }
 
     @Override

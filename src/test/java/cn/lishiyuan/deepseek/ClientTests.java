@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 @DisplayName("Client测试")
 public class ClientTests {
@@ -66,7 +68,17 @@ public class ClientTests {
 
         List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
         ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-        client.streamChat(chatRequest,chatResponse -> Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空"));
+        CountDownLatch latch = new CountDownLatch(1);
+
+        client.streamChat(chatRequest,chatResponse -> {
+            Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空");
+            latch.countDown();
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -79,15 +91,29 @@ public class ClientTests {
 
     @Test
     @DisplayName("测试流FIM")
-    public void testStreamFIM(){
+    public void testStreamFIM() {
+        CountDownLatch latch = new CountDownLatch(1);
+
         FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-        client.streamFim(fimRequest, fimResponse -> Assertions.assertNotNull(fimResponse,"fimResponse不应该为空"));
+        client.streamFim(fimRequest, fimResponse -> {
+            Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
+            latch.countDown();
+        });
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Test
     @DisplayName("测试列出模型")
     public void testListModel(){
         ListModelResponse listModelResponse = client.listModel();
+        String name = listModelResponse.getData().stream().map(ListModelResponse.Model::getId).collect(Collectors.joining(","));
+        System.out.println(name);
         Assertions.assertNotNull(listModelResponse,"listModelResponse不应该为空");
     }
 

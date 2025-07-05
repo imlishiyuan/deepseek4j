@@ -1,12 +1,13 @@
-package cn.lishiyuan.deepseek.request;
+package cn.lishiyuan.deepseek.api.fim;
 
+import cn.lishiyuan.deepseek.api.BaseRequest;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class FimRequest {
+public class FimRequest extends BaseRequest<FimResponse> {
     @JSONField(name = "model")
     private String model;
 
@@ -32,7 +33,7 @@ public class FimRequest {
     private List<String> stop; // 可以是 String 或 List<String>
 
     @JSONField(name = "stream")
-    private Boolean stream;
+    private final boolean stream = false;
 
     @JSONField(name = "stream_options")
     private StreamOptions streamOptions;
@@ -62,4 +63,13 @@ public class FimRequest {
         return chatRequest;
     }
 
+    @Override
+    public Class<FimResponse> getResponseClass() {
+        return FimResponse.class;
+    }
+
+    @Override
+    public String getPath() {
+        return "beta/completions";
+    }
 }

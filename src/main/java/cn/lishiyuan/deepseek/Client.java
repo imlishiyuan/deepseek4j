@@ -1,32 +1,20 @@
 package cn.lishiyuan.deepseek;
 
-import cn.lishiyuan.deepseek.request.ChatRequest;
-import cn.lishiyuan.deepseek.request.FimRequest;
-import cn.lishiyuan.deepseek.response.*;
+import cn.lishiyuan.deepseek.api.BaseRequest;
+import cn.lishiyuan.deepseek.api.BaseResponse;
+import cn.lishiyuan.deepseek.api.BaseStreamRequest;
+import cn.lishiyuan.deepseek.api.BaseStreamResponse;
 
 import java.util.function.Consumer;
 
 
 public interface Client {
 
-    ChatResponse chat(ChatRequest request);
+    <T extends BaseResponse> T  http(BaseRequest<T> request,String method);
 
-    void streamChat(ChatRequest request, Consumer<StreamChatResponse> consumer);
+    <T extends BaseResponse> T  get(BaseRequest<T> request);
 
-    FimResponse fim(FimRequest request);
+    <T extends BaseResponse> T  post(BaseRequest<T> request);
 
-    void streamFim(FimRequest request, Consumer<StreamFimResponse> consumer);
-
-
-    /**
-     * 列出模型
-     * @return
-     */
-    ListModelResponse listModel();
-
-    /**
-     * 账户余额信息
-     * @return
-     */
-    BalanceInfoResponse getBalanceInfo();
+    <T extends BaseStreamResponse> void stream(BaseStreamRequest<T> request, Consumer<T> consumer);
 }

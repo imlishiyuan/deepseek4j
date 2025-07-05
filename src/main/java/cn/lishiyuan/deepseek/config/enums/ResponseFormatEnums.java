@@ -1,4 +1,4 @@
-package cn.lishiyuan.deepseek.enums;
+package cn.lishiyuan.deepseek.config.enums;
 
 import lombok.AllArgsConstructor;
 

@@ -1,14 +1,18 @@
-package cn.lishiyuan.deepseek.response;
+package cn.lishiyuan.deepseek.api.fim;
 
+import cn.lishiyuan.deepseek.api.BaseStreamResponse;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class FimResponse {
+public class StreamFimResponse extends BaseStreamResponse {
+    @JSONField(name = "id")
     private String id;
+    @JSONField(name = "created")
     private Integer created;
+    @JSONField(name = "model")
     private String model;
     @JSONField(name = "choices")
     private List<Choice> choices;
@@ -16,6 +20,7 @@ public class FimResponse {
     @JSONField(name = "system_fingerprint")
     private String systemFingerprint;
     // text_completion
+    @JSONField(name = "object")
     private String object;
 
     @JSONField(name = "usage")

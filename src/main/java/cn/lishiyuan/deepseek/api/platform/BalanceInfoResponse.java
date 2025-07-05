@@ -1,12 +1,13 @@
-package cn.lishiyuan.deepseek.response;
+package cn.lishiyuan.deepseek.api.platform;
 
+import cn.lishiyuan.deepseek.api.BaseResponse;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class BalanceInfoResponse {
+public class BalanceInfoResponse extends BaseResponse {
     @JSONField(name = "is_available")
     private Boolean isAvailable;
     @JSONField(name = "balance_infos")

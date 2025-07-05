@@ -1,21 +1,27 @@
-package cn.lishiyuan.deepseek.response;
+package cn.lishiyuan.deepseek.api.chat;
 
+import cn.lishiyuan.deepseek.api.BaseResponse;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class StreamChatResponse {
+public class ChatResponse extends BaseResponse {
+    @JSONField(name = "id")
     private String id;
+    @JSONField(name = "created")
     private Integer created;
+    @JSONField(name = "model")
     private String model;
     @JSONField(name = "choices")
     private List<Choice> choices;
 
     @JSONField(name = "system_fingerprint")
     private String systemFingerprint;
-    // chat.completion.chunk
+    // chat.completion
+
+    @JSONField(name = "object")
     private String object;
 
     @JSONField(name = "usage")
@@ -29,7 +35,7 @@ public class StreamChatResponse {
         @JSONField(name = "index")
         private Integer index;
 
-        @JSONField(name = "delta")
+        @JSONField(name = "message")
         private Message message;
 
         @JSONField(name = "logprobs")

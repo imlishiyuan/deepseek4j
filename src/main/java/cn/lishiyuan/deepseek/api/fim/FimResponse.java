@@ -1,21 +1,26 @@
-package cn.lishiyuan.deepseek.response;
+package cn.lishiyuan.deepseek.api.fim;
 
+import cn.lishiyuan.deepseek.api.BaseResponse;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class ChatResponse {
+public class FimResponse extends BaseResponse {
+    @JSONField(name = "id")
     private String id;
+    @JSONField(name = "created")
     private Integer created;
+    @JSONField(name = "model")
     private String model;
     @JSONField(name = "choices")
     private List<Choice> choices;
 
     @JSONField(name = "system_fingerprint")
     private String systemFingerprint;
-    // chat.completion
+    // text_completion
+    @JSONField(name = "object")
     private String object;
 
     @JSONField(name = "usage")
@@ -29,68 +34,25 @@ public class ChatResponse {
         @JSONField(name = "index")
         private Integer index;
 
-        @JSONField(name = "message")
-        private Message message;
+        @JSONField(name = "text")
+        private String text;
 
         @JSONField(name = "logprobs")
         private Logprobs logprobs;
     }
 
     @Data
-    public static class Message {
-        @JSONField(name = "content")
-        private String content;
-
-        @JSONField(name = "reasoning_content")
-        private String reasoningContent;
-
-        @JSONField(name = "role")
-        private String role;
-
-        @JSONField(name = "tool_calls")
-        private List<ToolCall> toolCalls;
-    }
-
-    @Data
-    public static class ToolCall {
-        @JSONField(name = "id")
-        private String id;
-
-        @JSONField(name = "type")
-        private String type;
-
-        @JSONField(name = "function")
-        private Function function;
-    }
-
-    @Data
-    public static class Function {
-        @JSONField(name = "name")
-        private String name;
-
-        @JSONField(name = "arguments")
-        private String arguments;
-    }
-
-    @Data
     public static class Logprobs {
-        @JSONField(name = "content")
-        private List<TokenLogprob> content;
+        @JSONField(name = "text_offset")
+        private List<Integer> textOffset;
+
+        @JSONField(name = "token_logprobs")
+        private List<Double> tokenLogprobs;
+
+        private List<String> tokens;
 
         @JSONField(name = "top_logprobs")
-        private List<TokenLogprob> topLogprobs;
-    }
-
-    @Data
-    public static class TokenLogprob {
-        @JSONField(name = "token")
-        private String token;
-
-        @JSONField(name = "logprob")
-        private Double logprob;
-
-        @JSONField(name = "bytes")
-        private List<Integer> bytes;
+        private List<Object> topLogprobs;
     }
 
     @Data

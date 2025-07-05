@@ -35,7 +35,7 @@
     </licenses>
 
     <properties>
-        <gpg.keyname>0x99B8BFD2</gpg.keyname>
+        <gpg.keyname>0xE757BE23</gpg.keyname>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

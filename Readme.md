@@ -25,7 +25,7 @@ you can use deepseek4j quickly by the following code
 ```java
 public static void main(String[] args) {
     Client client = new DefualtClient(accessKey);
-
+    
     ChatRequest.Message systemMessage = new ChatRequest.Message();
     systemMessage.setRole(RoleEnums.SYSTEM.code);
     systemMessage.setContent("You are a helpful assistant");
@@ -36,30 +36,36 @@ public static void main(String[] args) {
 
     List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
     ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-    ChatResponse chatResponse = client.chat(chatRequest);
+    ChatResponse chatResponse = client.post(chatRequest);
     System.out.println(chatResponse.getChoices().get(0).getContent());
 }
 ```
 
 ### API
 1. list model 列出模型
+
 ```java
 public static void main(String[] args) {
-    Client client = new DefualtClient(accessKey);
-    ListModelResponse modelList = client.listModel();
+    ListModelResponse listModelResponse = client.get(EmptyRequest.createListModelRequest());
+    String name = listModelResponse.getData().stream().map(ListModelResponse.Model::getId).collect(Collectors.joining(","));
+    System.out.println(name);
 }
 ```
 
 2. balance 查询余额
+
 ```java
 public static void main(String[] args) {
-    Client client = new DefualtClient(accessKey);
-    BalanceInfoResponse balanceInfo = client.getBalanceInfo();
+    BalanceInfoResponse balanceInfo = client.get(EmptyRequest.createBalanceRequest());
+    Assertions.assertNotNull(balanceInfo,"balanceInfo不能为空");
 }
 ```
+
 3. chat 聊天
+
 ```java
 public static void main(String[] args) {
+
     Client client = new DefualtClient(accessKey);
 
     ChatRequest.Message systemMessage = new ChatRequest.Message();
@@ -72,47 +78,54 @@ public static void main(String[] args) {
 
     List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
     ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-    ChatResponse chatResponse = client.chat(chatRequest);
+    ChatResponse chatResponse = client.post(chatRequest);
+    System.out.println(chatResponse.getChoices().get(0).getContent());
+    
 }
 ```
 
 4. stream chat 聊天(stream)
+
 ```java
 public static void main(String[] args) {
-    Client client = new DefualtClient(accessKey);
-
-    ChatRequest.Message systemMessage = new ChatRequest.Message();
+    StreamChatRequest.Message systemMessage = new StreamChatRequest.Message();
     systemMessage.setRole(RoleEnums.SYSTEM.code);
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequest.Message userMessage = new ChatRequest.Message();
+    StreamChatRequest.Message userMessage = new StreamChatRequest.Message();
     userMessage.setRole(RoleEnums.USER.code);
     userMessage.setContent("你好");
 
-    List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
-    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-    client.streamChat(chatRequest,chatResponse -> {
-        // handle chatResponse
+    List<StreamChatRequest.Message> messageList = List.of(systemMessage, userMessage);
+    StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
+    CountDownLatch latch = new CountDownLatch(1);
+
+    client.stream(chatRequest,chatResponse -> {
+        
+        
     });
 }
 ```
+
 5. FIM
+
 ```java
 public static void main(String[] args) {
-    Client client = new DefualtClient(accessKey);
-
     FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-    FimResponse fimResponse = client.fim(fimRequest);
+    FimResponse fimResponse = client.post(fimRequest);
+    Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
 }
 ```
+
 6. stream FIM
+
 ```java
 public static void main(String[] args) {
-    Client client = new DefualtClient(accessKey);
+    CountDownLatch latch = new CountDownLatch(1);
 
-    FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-    client.streamFim(fimRequest,fimResponse -> {
-        // handle fimResponse
+    StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
+    client.stream(fimRequest, fimResponse -> {
+       
     });
 }
 ```

@@ -6,6 +6,9 @@
 
 1. add maven dependency 添加依赖
 
+![Maven Central Version](https://img.shields.io/maven-central/v/cn.lishiyuan/deepseek4j)
+
+
 ```xml
 <dependency>
     <groupId>cn.lishiyuan</groupId>

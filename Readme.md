@@ -26,15 +26,15 @@ you can use deepseek4j quickly by the following code
 public static void main(String[] args) {
     Client client = new DefualtClient(accessKey);
     
-    ChatRequest.Message systemMessage = new ChatRequest.Message();
+    ChatRequestMessage systemMessage = new ChatRequestMessage();
     systemMessage.setRole(RoleEnums.SYSTEM.code);
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequest.Message userMessage = new ChatRequest.Message();
+    ChatRequestMessage userMessage = new ChatRequestMessage();
     userMessage.setRole(RoleEnums.USER.code);
     userMessage.setContent("你好");
 
-    List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
+    List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
     ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
     ChatResponse chatResponse = client.post(chatRequest);
     System.out.println(chatResponse.getChoices().get(0).getContent());
@@ -68,15 +68,15 @@ public static void main(String[] args) {
 
     Client client = new DefualtClient(accessKey);
 
-    ChatRequest.Message systemMessage = new ChatRequest.Message();
+    ChatRequestMessage systemMessage = new ChatRequestMessage();
     systemMessage.setRole(RoleEnums.SYSTEM.code);
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequest.Message userMessage = new ChatRequest.Message();
+    ChatRequestMessage userMessage = new ChatRequestMessage();
     userMessage.setRole(RoleEnums.USER.code);
     userMessage.setContent("你好");
 
-    List<ChatRequest.Message> messageList = List.of(systemMessage, userMessage);
+    List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
     ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
     ChatResponse chatResponse = client.post(chatRequest);
     System.out.println(chatResponse.getChoices().get(0).getContent());
@@ -88,15 +88,15 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    StreamChatRequest.Message systemMessage = new StreamChatRequest.Message();
+    ChatRequestMessage systemMessage = new ChatRequestMessage();
     systemMessage.setRole(RoleEnums.SYSTEM.code);
     systemMessage.setContent("You are a helpful assistant");
 
-    StreamChatRequest.Message userMessage = new StreamChatRequest.Message();
+    ChatRequestMessage userMessage = new ChatRequestMessage();
     userMessage.setRole(RoleEnums.USER.code);
     userMessage.setContent("你好");
 
-    List<StreamChatRequest.Message> messageList = List.of(systemMessage, userMessage);
+    List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
     StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
     CountDownLatch latch = new CountDownLatch(1);
 

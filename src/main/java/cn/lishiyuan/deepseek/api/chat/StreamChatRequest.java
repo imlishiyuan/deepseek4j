@@ -18,7 +18,7 @@ import java.util.Map;
 public class StreamChatRequest extends BaseStreamRequest<StreamChatResponse> {
 
     @JSONField(name = "messages")
-    private List<Message> messages;
+    private List<ChatRequestMessage> messages;
 
     // deepseek-chat, deepseek-reasoner
     @JSONField(name = "model")
@@ -73,15 +73,6 @@ public class StreamChatRequest extends BaseStreamRequest<StreamChatResponse> {
     @Override
     public String getPath() {
         return "chat/completions";
-    }
-
-    @Data
-    @Accessors(chain = true)
-    public static class Message {
-        @JSONField(name = "role")
-        private String role;
-        @JSONField(name = "content")
-        private String content;
     }
 
 
@@ -145,7 +136,7 @@ public class StreamChatRequest extends BaseStreamRequest<StreamChatResponse> {
 
 
 
-    public static StreamChatRequest create(List<Message> messages, String model) {
+    public static StreamChatRequest create(List<ChatRequestMessage> messages, String model) {
         StreamChatRequest chatRequest = new StreamChatRequest();
         chatRequest.setMessages(messages);
         chatRequest.setModel(model);

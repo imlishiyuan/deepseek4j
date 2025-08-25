@@ -6,8 +6,8 @@ import lombok.AllArgsConstructor;
 public enum RoleEnums {
     SYSTEM("system","系统"),
     USER("user","用户"),
-    ASSISTANT("assistant","助手")
-
+    ASSISTANT("assistant","助手"),
+    TOOL("tool","工具")
     ;
     public final String code;
     public final String desc;

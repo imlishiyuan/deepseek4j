@@ -18,7 +18,7 @@ import java.util.Map;
 public class ChatRequest extends BaseRequest<ChatResponse> {
 
     @JSONField(name = "messages")
-    private List<Message> messages;
+    private List<ChatRequestMessage> messages;
 
     // deepseek-chat, deepseek-reasoner
     @JSONField(name = "model")
@@ -75,14 +75,6 @@ public class ChatRequest extends BaseRequest<ChatResponse> {
         return "chat/completions";
     }
 
-    @Data
-    @Accessors(chain = true)
-    public static class Message {
-        @JSONField(name = "role")
-        private String role;
-        @JSONField(name = "content")
-        private String content;
-    }
 
 
     @Data
@@ -145,7 +137,7 @@ public class ChatRequest extends BaseRequest<ChatResponse> {
 
 
 
-    public static ChatRequest create(List<Message> messages, String model) {
+    public static ChatRequest create(List<ChatRequestMessage> messages, String model) {
         ChatRequest chatRequest = new ChatRequest();
         chatRequest.setMessages(messages);
         chatRequest.setModel(model);

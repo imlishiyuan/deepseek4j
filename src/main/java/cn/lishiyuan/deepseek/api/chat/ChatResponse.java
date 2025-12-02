@@ -82,9 +82,8 @@ public class ChatResponse extends BaseResponse {
     public static class Logprobs {
         @JSONField(name = "content")
         private List<TokenLogprob> content;
-
-        @JSONField(name = "top_logprobs")
-        private List<TokenLogprob> topLogprobs;
+        @JSONField(name = "reasoning_content")
+        private List<TokenLogprob> reasoningContent;
     }
 
     @Data
@@ -97,6 +96,9 @@ public class ChatResponse extends BaseResponse {
 
         @JSONField(name = "bytes")
         private List<Integer> bytes;
+
+        @JSONField(name = "top_logprobs")
+        private List<TokenLogprob> topLogprobs;
     }
 
     @Data

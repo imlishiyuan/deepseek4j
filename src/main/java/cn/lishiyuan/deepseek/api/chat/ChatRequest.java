@@ -3,6 +3,7 @@ package cn.lishiyuan.deepseek.api.chat;
 import cn.lishiyuan.deepseek.api.BaseRequest;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;
 import cn.lishiyuan.deepseek.config.enums.ResponseFormatEnums;
+import cn.lishiyuan.deepseek.config.enums.ThinkingEnums;
 import cn.lishiyuan.deepseek.config.enums.ToolTypeEnums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
@@ -23,6 +24,10 @@ public class ChatRequest extends BaseRequest<ChatResponse> {
     // deepseek-chat, deepseek-reasoner
     @JSONField(name = "model")
     private String model = ModelEnums.DEEPSEEK_CHAT.code;
+    /**
+     * 思考模式
+     */
+    private Thinking thinking = new Thinking();
     /**
      * 介于 -2.0 和 2.0 之间的数字。如果该值为正，那么新 token 会根据其在已有文本中的出现频率受到相应的惩罚，降低模型重复相同内容的可能性。
      */
@@ -87,6 +92,12 @@ public class ChatRequest extends BaseRequest<ChatResponse> {
     public static class StreamOptions {
         @JSONField(name = "include_usage")
         private Boolean includeUsage;
+    }
+
+    @Data
+    public static class Thinking{
+        @JSONField(name = "type")
+        private String type = ThinkingEnums.DISABLED.code;
     }
 
     @Data

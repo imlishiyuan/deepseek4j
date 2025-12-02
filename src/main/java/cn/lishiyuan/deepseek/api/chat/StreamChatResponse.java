@@ -83,8 +83,10 @@ public class StreamChatResponse extends BaseStreamResponse {
         @JSONField(name = "content")
         private List<TokenLogprob> content;
 
-        @JSONField(name = "top_logprobs")
-        private List<TokenLogprob> topLogprobs;
+        @JSONField(name = "reasoning_content")
+        private List<TokenLogprob> reasoningContent;
+
+
     }
 
     @Data
@@ -97,6 +99,9 @@ public class StreamChatResponse extends BaseStreamResponse {
 
         @JSONField(name = "bytes")
         private List<Integer> bytes;
+
+        @JSONField(name = "top_logprobs")
+        private List<TokenLogprob> topLogprobs;
     }
 
     @Data

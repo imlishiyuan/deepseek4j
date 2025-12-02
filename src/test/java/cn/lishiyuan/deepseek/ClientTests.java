@@ -51,7 +51,7 @@ public class ClientTests {
 
         ChatRequestMessage userMessage = new ChatRequestMessage();
         userMessage.setRole(RoleEnums.USER.code);
-        userMessage.setContent("你好");
+        userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
         ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
@@ -68,7 +68,7 @@ public class ClientTests {
 
         ChatRequestMessage userMessage = new ChatRequestMessage();
         userMessage.setRole(RoleEnums.USER.code);
-        userMessage.setContent("你好");
+        userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
         StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);

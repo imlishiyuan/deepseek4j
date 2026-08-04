@@ -5,6 +5,10 @@ import cn.lishiyuan.deepseek.api.chat.ChatRequest;
 import cn.lishiyuan.deepseek.api.chat.ChatRequestMessage;
 import cn.lishiyuan.deepseek.api.chat.StreamChatRequest;
 import cn.lishiyuan.deepseek.api.fim.StreamFimRequest;
+import cn.lishiyuan.deepseek.api.response.ResponseRequest;
+import cn.lishiyuan.deepseek.api.response.ResponseResult;
+import cn.lishiyuan.deepseek.api.response.ResponseStreamEvent;
+import cn.lishiyuan.deepseek.api.response.ResponseStreamRequest;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;
 import cn.lishiyuan.deepseek.api.fim.FimRequest;
 import cn.lishiyuan.deepseek.api.chat.ChatResponse;
@@ -55,7 +59,7 @@ public class ClientTests {
         userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-        ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
+        ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
         ChatRequest.Thinking thinking = new ChatRequest.Thinking();
         thinking.setType(ThinkingEnums.ENABLED.code);
         thinking.setReasoningEffort(ThinkingEffortEnums.MAX.code);
@@ -76,17 +80,17 @@ public class ClientTests {
         userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-        StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
+        StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
 
         client.stream(chatRequest)
                 .doOnNext(chatResponse -> Assertions.assertNotNull(chatResponse,"chatResponse"))
-                .blockFirst();
+                .blockLast();
     }
 
     @Test
     @DisplayName("测试FIM")
     public void testFIM(){
-        FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
+        FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
         FimResponse fimResponse = client.post(fimRequest).block();
         Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
     }
@@ -94,7 +98,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试流FIM")
     public void testStreamFIM() {
-        StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
+        StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
         client.stream(fimRequest)
                 .doOnNext(fimResponse -> Assertions.assertNotNull(fimResponse,"fimResponse"))
                 .blockFirst();
@@ -114,5 +118,24 @@ public class ClientTests {
     public void testBalanceInfo(){
         BalanceInfoResponse balanceInfo = client.get(EmptyRequest.createBalanceRequest()).block();
         Assertions.assertNotNull(balanceInfo,"balanceInfo不能为空");
+    }
+
+    @Test
+    @DisplayName("测试 responses")
+    public void testResponses(){
+        ResponseRequest request = ResponseRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ResponseResult result = client.post(request).block();
+        Assertions.assertNotNull(result,"responseResult不应该为空");
+        Assertions.assertEquals("response", result.getObject(),"object 应为 response");
+        Assertions.assertNotNull(result.getOutput(),"output 不应该为空");
+    }
+
+    @Test
+    @DisplayName("测试流式 responses")
+    public void testStreamResponses(){
+        ResponseStreamRequest request = ResponseStreamRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        client.streamResponse(request)
+                .doOnNext(event -> Assertions.assertNotNull(event,"event不应该为空"))
+                .blockLast();
     }
 }

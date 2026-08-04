@@ -1,6 +1,6 @@
 package cn.lishiyuan.deepseek.e;
 
-public enum DeepseekErrorEnum {
+public enum DeepSeekErrorEnum {
 
     BAD_REQUEST(400, "格式错误", "请求体格式错误，请根据错误信息修改请求体"),
     UNAUTHORIZED(401, "认证失败", "API key 错误或缺失，请检查 API key 或创建新的 key"),
@@ -14,14 +14,14 @@ public enum DeepseekErrorEnum {
     public final String name;  // 中文名称
     public final String desc;  // 中文描述（原因 + 解决方法）
 
-    DeepseekErrorEnum(int code, String name, String desc) {
+    DeepSeekErrorEnum(int code, String name, String desc) {
         this.code = code;
         this.name = name;
         this.desc = desc;
     }
 
-    public static DeepseekErrorEnum fromCode(int code) {
-        for (DeepseekErrorEnum error : values()) {
+    public static DeepSeekErrorEnum fromCode(int code) {
+        for (DeepSeekErrorEnum error : values()) {
             if (error.code == code) {
                 return error;
             }

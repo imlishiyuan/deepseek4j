@@ -1,12 +1,12 @@
 package cn.lishiyuan.deepseek.api;
 
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public abstract class BaseStreamRequest<T extends BaseStreamResponse> {
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public abstract String getPath();
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public abstract Class<T> getResponseClass();
 }

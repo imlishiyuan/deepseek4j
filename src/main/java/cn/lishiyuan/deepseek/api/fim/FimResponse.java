@@ -1,84 +1,84 @@
 package cn.lishiyuan.deepseek.api.fim;
 
 import cn.lishiyuan.deepseek.api.BaseResponse;
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class FimResponse extends BaseResponse {
-    @JSONField(name = "id")
+    @JsonProperty("id")
     private String id;
-    @JSONField(name = "created")
+    @JsonProperty("created")
     private Integer created;
-    @JSONField(name = "model")
+    @JsonProperty("model")
     private String model;
-    @JSONField(name = "choices")
+    @JsonProperty("choices")
     private List<Choice> choices;
 
-    @JSONField(name = "system_fingerprint")
+    @JsonProperty("system_fingerprint")
     private String systemFingerprint;
     // text_completion
-    @JSONField(name = "object")
+    @JsonProperty("object")
     private String object;
 
-    @JSONField(name = "usage")
+    @JsonProperty("usage")
     private Usage usage;
 
     @Data
     public static class Choice {
-        @JSONField(name = "finish_reason")
+        @JsonProperty("finish_reason")
         private String finishReason;
 
-        @JSONField(name = "index")
+        @JsonProperty("index")
         private Integer index;
 
-        @JSONField(name = "text")
+        @JsonProperty("text")
         private String text;
 
-        @JSONField(name = "logprobs")
+        @JsonProperty("logprobs")
         private Logprobs logprobs;
     }
 
     @Data
     public static class Logprobs {
-        @JSONField(name = "text_offset")
+        @JsonProperty("text_offset")
         private List<Integer> textOffset;
 
-        @JSONField(name = "token_logprobs")
+        @JsonProperty("token_logprobs")
         private List<Double> tokenLogprobs;
 
         private List<String> tokens;
 
-        @JSONField(name = "top_logprobs")
+        @JsonProperty("top_logprobs")
         private List<Object> topLogprobs;
     }
 
     @Data
     public static class Usage {
-        @JSONField(name = "completion_tokens")
+        @JsonProperty("completion_tokens")
         private Integer completionTokens;
 
-        @JSONField(name = "prompt_tokens")
+        @JsonProperty("prompt_tokens")
         private Integer promptTokens;
 
-        @JSONField(name = "prompt_cache_hit_tokens")
+        @JsonProperty("prompt_cache_hit_tokens")
         private Integer promptCacheHitTokens;
 
-        @JSONField(name = "prompt_cache_miss_tokens")
+        @JsonProperty("prompt_cache_miss_tokens")
         private Integer promptCacheMissTokens;
 
-        @JSONField(name = "total_tokens")
+        @JsonProperty("total_tokens")
         private Integer totalTokens;
 
-        @JSONField(name = "completion_tokens_details")
+        @JsonProperty("completion_tokens_details")
         private CompletionTokensDetails completionTokensDetails;
     }
 
     @Data
     public static class CompletionTokensDetails {
-        @JSONField(name = "reasoning_tokens")
+        @JsonProperty("reasoning_tokens")
         private Integer reasoningTokens;
     }
 }

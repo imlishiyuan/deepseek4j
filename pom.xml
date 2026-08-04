@@ -6,7 +6,7 @@
 
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 
     <packaging>jar</packaging>
 
@@ -29,8 +29,9 @@
 
     <licenses>
         <license>
-            <name>Wait Add It</name>
-            <distribution>Wait Add It</distribution>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
         </license>
     </licenses>
 
@@ -50,9 +51,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
-            <version>2.0.43</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>3.6.6</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

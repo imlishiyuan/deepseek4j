@@ -12,6 +12,8 @@ import cn.lishiyuan.deepseek.api.fim.FimResponse;
 import cn.lishiyuan.deepseek.api.platform.ListModelResponse;
 import cn.lishiyuan.deepseek.config.enums.RoleEnums;
 import cn.lishiyuan.deepseek.api.platform.BalanceInfoResponse;
+import cn.lishiyuan.deepseek.config.enums.ThinkingEffortEnums;
+import cn.lishiyuan.deepseek.config.enums.ThinkingEnums;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 @DisplayName("Client测试")
@@ -36,7 +37,7 @@ public class ClientTests {
         Path path = Paths.get(ClientTests.class.getClassLoader().getResource("accessKey.txt").getPath());
         try {
             String accessKey = Files.readString(path);
-            client = new DefualtClient(accessKey);
+            client = new DefaultClient(accessKey);
         } catch (IOException e) {
             throw new RuntimeException("读取accessKey失败",e);
         }
@@ -55,8 +56,12 @@ public class ClientTests {
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
         ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-        ChatResponse chatResponse = client.post(chatRequest);
-        Assertions.assertNotNull(chatResponse,"listModelResponse不应该为空");
+        ChatRequest.Thinking thinking = new ChatRequest.Thinking();
+        thinking.setType(ThinkingEnums.ENABLED.code);
+        thinking.setReasoningEffort(ThinkingEffortEnums.MAX.code);
+        chatRequest.setThinking(thinking);
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse,"chatResponse不应该为空");
     }
 
     @Test
@@ -72,50 +77,33 @@ public class ClientTests {
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
         StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_CHAT.code);
-        CountDownLatch latch = new CountDownLatch(1);
 
-        client.stream(chatRequest,chatResponse -> {
-            Assertions.assertNotNull(chatResponse,"chatResponse");
-            latch.countDown();
-        });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        client.stream(chatRequest)
+                .doOnNext(chatResponse -> Assertions.assertNotNull(chatResponse,"chatResponse"))
+                .blockFirst();
     }
 
     @Test
     @DisplayName("测试FIM")
     public void testFIM(){
         FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-        FimResponse fimResponse = client.post(fimRequest);
+        FimResponse fimResponse = client.post(fimRequest).block();
         Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
     }
 
     @Test
     @DisplayName("测试流FIM")
     public void testStreamFIM() {
-        CountDownLatch latch = new CountDownLatch(1);
-
         StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_CHAT.code);
-        client.stream(fimRequest, fimResponse -> {
-            Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
-            latch.countDown();
-        });
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+        client.stream(fimRequest)
+                .doOnNext(fimResponse -> Assertions.assertNotNull(fimResponse,"fimResponse"))
+                .blockFirst();
     }
 
     @Test
     @DisplayName("测试列出模型")
     public void testListModel(){
-        ListModelResponse listModelResponse = client.get(EmptyRequest.createListModelRequest());
+        ListModelResponse listModelResponse = client.get(EmptyRequest.createListModelRequest()).block();
         String name = listModelResponse.getData().stream().map(ListModelResponse.Model::getId).collect(Collectors.joining(","));
         System.out.println(name);
         Assertions.assertNotNull(listModelResponse,"listModelResponse不应该为空");
@@ -124,7 +112,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试获取账户余额")
     public void testBalanceInfo(){
-        BalanceInfoResponse balanceInfo = client.get(EmptyRequest.createBalanceRequest());
+        BalanceInfoResponse balanceInfo = client.get(EmptyRequest.createBalanceRequest()).block();
         Assertions.assertNotNull(balanceInfo,"balanceInfo不能为空");
     }
 }

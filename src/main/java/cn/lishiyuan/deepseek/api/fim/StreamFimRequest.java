@@ -1,59 +1,63 @@
 package cn.lishiyuan.deepseek.api.fim;
 
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
-import cn.lishiyuan.deepseek.api.chat.StreamChatResponse;
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class StreamFimRequest extends BaseStreamRequest<StreamFimResponse> {
-    @JSONField(name = "model")
+    @JsonProperty("model")
     private String model;
 
-    @JSONField(name = "prompt")
+    @JsonProperty("prompt")
     private String prompt;
 
-    @JSONField(name = "echo")
+    @JsonProperty("echo")
     private Boolean echo;
 
-    @JSONField(name = "frequency_penalty")
+    /**
+     * @deprecated 已废弃，传入无效果。见 API 文档。
+     */
+    @Deprecated
+    @JsonProperty("frequency_penalty")
     private Double frequencyPenalty;
 
-    @JSONField(name = "logprobs")
+    @JsonProperty("logprobs")
     private Integer logprobs;
 
-    @JSONField(name = "max_tokens")
+    @JsonProperty("max_tokens")
     private Integer maxTokens;
 
-    @JSONField(name = "presence_penalty")
+    /**
+     * @deprecated 已废弃，传入无效果。见 API 文档。
+     */
+    @Deprecated
+    @JsonProperty("presence_penalty")
     private Double presencePenalty;
 
-    @JSONField(name = "stop")
+    @JsonProperty("stop")
     private List<String> stop; // 可以是 String 或 List<String>
 
-    @JSONField(name = "stream")
+    @JsonProperty("stream")
     private final boolean stream = true;
 
-    @JSONField(name = "stream_options")
+    @JsonProperty("stream_options")
     private StreamOptions streamOptions;
 
-    @JSONField(name = "include_usage")
-    private Boolean includeUsage;
-
-    @JSONField(name = "suffix")
+    @JsonProperty("suffix")
     private String suffix;
 
-    @JSONField(name = "temperature")
+    @JsonProperty("temperature")
     private Double temperature;
 
-    @JSONField(name = "top_p")
+    @JsonProperty("top_p")
     private Double topP;
 
     @Data
     public static class StreamOptions {
-        @JSONField(name = "include_usage")
+        @JsonProperty("include_usage")
         private Boolean includeUsage;
     }
 

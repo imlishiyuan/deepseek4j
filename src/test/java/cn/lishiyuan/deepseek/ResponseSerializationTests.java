@@ -1,8 +1,15 @@
 package cn.lishiyuan.deepseek;
 
+import cn.lishiyuan.deepseek.api.response.ContentBlock;
+import cn.lishiyuan.deepseek.api.response.InputItem;
+import cn.lishiyuan.deepseek.api.response.Reasoning;
 import cn.lishiyuan.deepseek.api.response.ResponseRequest;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamEvent;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamRequest;
+import cn.lishiyuan.deepseek.api.response.Text;
+import cn.lishiyuan.deepseek.api.response.TextFormat;
+import cn.lishiyuan.deepseek.api.response.Tool;
+import cn.lishiyuan.deepseek.api.common.ToolChoice;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;
 import cn.lishiyuan.deepseek.config.enums.ResponseReasoningEffortEnums;
 import cn.lishiyuan.deepseek.config.enums.ResponseTextFormatEnums;
@@ -79,15 +86,15 @@ public class ResponseSerializationTests {
     @Test
     @DisplayName("input 数组形态序列化为输入项数组，字段映射正确")
     public void testInputAsArray() throws Exception {
-        ResponseRequest.InputItem msg = new ResponseRequest.InputItem();
+        InputItem msg = new InputItem();
         msg.setRole("user");
         msg.setContent("hello");
-        ResponseRequest.InputItem fc = new ResponseRequest.InputItem();
+        InputItem fc = new InputItem();
         fc.setType("function_call");
         fc.setCallId("call_1");
         fc.setName("get_weather");
         fc.setArguments("{\"city\":\"sz\"}");
-        ResponseRequest.InputItem out = new ResponseRequest.InputItem();
+        InputItem out = new InputItem();
         out.setType("function_call_output");
         out.setCallId("call_1");
         out.setOutput("{\"temp\":30}");
@@ -118,10 +125,10 @@ public class ResponseSerializationTests {
     @Test
     @DisplayName("input 内容块数组形态")
     public void testInputContentBlocks() throws Exception {
-        ResponseRequest.InputContentBlock block = new ResponseRequest.InputContentBlock();
+        ContentBlock block = new ContentBlock();
         block.setType("input_text");
         block.setText("hello");
-        ResponseRequest.InputItem msg = new ResponseRequest.InputItem();
+        InputItem msg = new InputItem();
         msg.setRole("user");
         msg.setContent(List.of(block));
 
@@ -136,7 +143,7 @@ public class ResponseSerializationTests {
     @DisplayName("reasoning.effort 映射正确")
     public void testReasoningEffort() throws Exception {
         ResponseRequest req = base("hi");
-        ResponseRequest.Reasoning r = new ResponseRequest.Reasoning();
+        Reasoning r = new Reasoning();
         r.setEffort(ResponseReasoningEffortEnums.HIGH.code);
         req.setReasoning(r);
         JsonNode node = serialize(req);
@@ -147,8 +154,8 @@ public class ResponseSerializationTests {
     @DisplayName("text.format json_schema：type/name/schema 映射")
     public void testTextFormatJsonSchema() throws Exception {
         ResponseRequest req = base("hi");
-        ResponseRequest.Text text = new ResponseRequest.Text();
-        ResponseRequest.TextFormat fmt = new ResponseRequest.TextFormat();
+        Text text = new Text();
+        TextFormat fmt = new TextFormat();
         fmt.setType(ResponseTextFormatEnums.JSON_SCHEMA.code);
         fmt.setName("weather");
         fmt.setSchema(Map.of(
@@ -171,11 +178,11 @@ public class ResponseSerializationTests {
     @DisplayName("tools：function 与 web_search 两种类型")
     public void testTools() throws Exception {
         ResponseRequest req = base("hi");
-        ResponseRequest.Tool fn = new ResponseRequest.Tool();
+        Tool fn = new Tool();
         fn.setName("get_weather");
         fn.setDescription("获取天气");
         fn.setParameters(Map.of("type", "object", "properties", Map.of()));
-        ResponseRequest.Tool ws = new ResponseRequest.Tool();
+        Tool ws = new Tool();
         ws.setType("web_search");
         req.setTools(List.of(fn, ws));
 
@@ -195,7 +202,7 @@ public class ResponseSerializationTests {
         assertTrue(serialize(req).get("tool_choice").isTextual());
         assertEquals("auto", serialize(req).get("tool_choice").asText());
 
-        ResponseRequest.ToolChoice tc = new ResponseRequest.ToolChoice();
+        ToolChoice tc = new ToolChoice();
         tc.setType("function");
         tc.setName("get_weather");
         req.setToolChoice(tc);

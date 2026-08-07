@@ -1,6 +1,7 @@
 package cn.lishiyuan.deepseek.api.fim;
 
 import cn.lishiyuan.deepseek.api.BaseRequest;
+import cn.lishiyuan.deepseek.api.common.StreamOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -54,12 +55,6 @@ public class FimRequest extends BaseRequest<FimResponse> {
 
     @JsonProperty("top_p")
     private Double topP;
-
-    @Data
-    public static class StreamOptions {
-        @JsonProperty("include_usage")
-        private Boolean includeUsage;
-    }
 
     public static FimRequest create(String prompt, String model) {
         FimRequest chatRequest = new FimRequest();

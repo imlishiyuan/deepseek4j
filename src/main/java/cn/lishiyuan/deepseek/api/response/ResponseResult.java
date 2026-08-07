@@ -1,6 +1,7 @@
 package cn.lishiyuan.deepseek.api.response;
 
 import cn.lishiyuan.deepseek.api.BaseResponse;
+import cn.lishiyuan.deepseek.api.common.ReasoningTokensDetails;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -83,19 +84,6 @@ public class ResponseResult extends BaseResponse {
         private Object action;
     }
 
-    /**
-     * 内容块：output_text / reasoning_text。
-     */
-    @Data
-    public static class ContentBlock {
-        /** output_text / reasoning_text */
-        @JsonProperty("type")
-        private String type;
-
-        @JsonProperty("text")
-        private String text;
-    }
-
     @Data
     public static class Usage {
         @JsonProperty("input_tokens")
@@ -108,7 +96,7 @@ public class ResponseResult extends BaseResponse {
         private Integer outputTokens;
 
         @JsonProperty("output_tokens_details")
-        private OutputTokensDetails outputTokensDetails;
+        private ReasoningTokensDetails outputTokensDetails;
 
         @JsonProperty("total_tokens")
         private Integer totalTokens;
@@ -119,13 +107,6 @@ public class ResponseResult extends BaseResponse {
         /** 命中上下文缓存的输入 token 数 */
         @JsonProperty("cached_tokens")
         private Integer cachedTokens;
-    }
-
-    @Data
-    public static class OutputTokensDetails {
-        /** 思考链 token 数 */
-        @JsonProperty("reasoning_tokens")
-        private Integer reasoningTokens;
     }
 
     @Data

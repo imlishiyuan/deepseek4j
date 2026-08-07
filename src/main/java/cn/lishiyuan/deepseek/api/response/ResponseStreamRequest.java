@@ -2,13 +2,10 @@ package cn.lishiyuan.deepseek.api.response;
 
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;
-import cn.lishiyuan.deepseek.config.enums.ResponseTextFormatEnums;
-import cn.lishiyuan.deepseek.config.enums.ToolTypeEnums;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Responses API 流式请求。
@@ -85,102 +82,6 @@ public class ResponseStreamRequest extends BaseStreamRequest<ResponseStreamEvent
     @Override
     public String getPath() {
         return "responses";
-    }
-
-    @Data
-    public static class Reasoning {
-        /** none/minimal/low/medium/high/xhigh/max，见 {@link cn.lishiyuan.deepseek.config.enums.ResponseReasoningEffortEnums} */
-        @JsonProperty("effort")
-        private String effort;
-    }
-
-    @Data
-    public static class Text {
-        @JsonProperty("format")
-        private TextFormat format;
-    }
-
-    @Data
-    public static class TextFormat {
-        /** text / json_object / json_schema */
-        @JsonProperty("type")
-        private String type = ResponseTextFormatEnums.TEXT.code;
-
-        /** type=json_schema 时必填：schema 名称 */
-        @JsonProperty("name")
-        private String name;
-
-        /** type=json_schema 时必填：JSON Schema 对象 */
-        @JsonProperty("schema")
-        private Map<String, Object> schema;
-    }
-
-    @Data
-    public static class Tool {
-        /** function / web_search / web_search_2025_08_26 */
-        @JsonProperty("type")
-        private String type = ToolTypeEnums.FUNCTION.code;
-
-        /** function 必填：函数名，匹配 ^[a-zA-Z0-9_-]+$ 且 ≤128 字符 */
-        @JsonProperty("name")
-        private String name;
-
-        @JsonProperty("description")
-        private String description;
-
-        /** JSON Schema 对象，描述函数参数。省略则空参数列表 */
-        @JsonProperty("parameters")
-        private Map<String, Object> parameters;
-    }
-
-    /** tool_choice 对象形式便捷构造：{"type":"function","name":"..."} 或 {"type":"web_search"} */
-    @Data
-    public static class ToolChoice {
-        @JsonProperty("type")
-        private String type = ToolTypeEnums.FUNCTION.code;
-
-        @JsonProperty("name")
-        private String name;
-    }
-
-    /**
-     * 输入项：type 为 message / function_call / function_call_output / reasoning / web_search_call。
-     * 不同 type 使用不同字段子集。
-     */
-    @Data
-    public static class InputItem {
-        @JsonProperty("type")
-        private String type;
-
-        /** message: user / assistant / system / developer（developer 视为 system） */
-        @JsonProperty("role")
-        private String role;
-
-        /** message: 字符串或 List<InputContentBlock>；reasoning: List<InputContentBlock> */
-        @JsonProperty("content")
-        private Object content;
-
-        @JsonProperty("call_id")
-        private String callId;
-
-        @JsonProperty("name")
-        private String name;
-
-        @JsonProperty("arguments")
-        private String arguments;
-
-        @JsonProperty("output")
-        private String output;
-    }
-
-    /** 输入内容块：input_text / output_text / reasoning_text */
-    @Data
-    public static class InputContentBlock {
-        @JsonProperty("type")
-        private String type;
-
-        @JsonProperty("text")
-        private String text;
     }
 
     public static ResponseStreamRequest create(String input, String model) {

@@ -1,12 +1,8 @@
 package cn.lishiyuan.deepseek;
 
-import cn.lishiyuan.deepseek.api.chat.ChatRequest;
-import cn.lishiyuan.deepseek.api.chat.ChatRequestMessage;
-import cn.lishiyuan.deepseek.config.enums.ModelEnums;
-import cn.lishiyuan.deepseek.config.enums.RoleEnums;
-import cn.lishiyuan.deepseek.config.enums.ThinkingEffortEnums;
-import cn.lishiyuan.deepseek.config.enums.ThinkingEnums;
-import cn.lishiyuan.deepseek.config.enums.ToolChoiceEnums;
+import cn.lishiyuan.deepseek.api.chat.*;
+import cn.lishiyuan.deepseek.api.common.FuncParamDefinition;
+import cn.lishiyuan.deepseek.config.enums.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,8 +39,7 @@ public class RequestSerializationTests {
     }
 
     private ChatRequest baseRequest() {
-        ChatRequestMessage m = new ChatRequestMessage();
-        m.setRole(RoleEnums.USER.code);
+        UserMessage m = new UserMessage();
         m.setContent("hi");
         return ChatRequest.create(List.of(m), ModelEnums.DEEPSEEK_V4_FLASH.code);
     }
@@ -76,14 +71,17 @@ public class RequestSerializationTests {
     @DisplayName("function.parameters 为 JSON Schema 对象（非数组），strict 可设置")
     public void testParametersIsObject() throws Exception {
         ChatRequest req = baseRequest();
-        ChatRequest.Tool tool = new ChatRequest.Tool();
-        ChatRequest.Function fn = new ChatRequest.Function();
+        Tool tool = new Tool();
+        ToolFunction fn = new ToolFunction();
         fn.setName("get_weather");
-        fn.setParameters(Map.of(
-                "type", "object",
-                "properties", Map.of("city", Map.of("type", "string")),
-                "required", List.of("city")
-        ));
+        FunctionParameter functionParameter = new FunctionParameter();
+        functionParameter.setType(FuncParamEnums.OBJ.code);
+        FuncParamDefinition funcParamDefinition = new FuncParamDefinition();
+        funcParamDefinition.setType(FuncParamEnums.STR.code);
+        funcParamDefinition.setDescription("城市名称");
+        functionParameter.setProperties(Map.of("city",funcParamDefinition));
+        functionParameter.setRequired(List.of("city"));
+        fn.setParameters(functionParameter);
         fn.setStrict(true);
         tool.setFunction(fn);
         req.setTools(List.of(tool));
@@ -114,8 +112,8 @@ public class RequestSerializationTests {
     @DisplayName("tool_choice 支持对象形式（指定 tool）")
     public void testToolChoiceObject() throws Exception {
         ChatRequest req = baseRequest();
-        ChatRequest.ToolChoice tc = new ChatRequest.ToolChoice();
-        ChatRequest.Function fn = new ChatRequest.Function();
+        Tool tc = new Tool();
+        ToolFunction fn = new ToolFunction();
         fn.setName("get_weather");
         tc.setFunction(fn);
         req.setToolChoice(tc);

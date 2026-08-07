@@ -1,5 +1,6 @@
 package cn.lishiyuan.deepseek;
 
+import cn.lishiyuan.deepseek.api.common.StreamOptions;
 import cn.lishiyuan.deepseek.api.fim.FimRequest;
 import cn.lishiyuan.deepseek.api.fim.StreamFimRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -73,7 +74,7 @@ public class FimSerializationTests {
     @DisplayName("stream_options.include_usage 映射正确，且不产生顶层 include_usage")
     public void testStreamOptionsIncludeUsage() throws Exception {
         FimRequest req = FimRequest.create("x", "deepseek-chat");
-        FimRequest.StreamOptions opts = new FimRequest.StreamOptions();
+        StreamOptions opts = new StreamOptions();
         opts.setIncludeUsage(true);
         req.setStreamOptions(opts);
 

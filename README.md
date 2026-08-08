@@ -18,7 +18,7 @@ A Java client for the DeepSeek API.
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 

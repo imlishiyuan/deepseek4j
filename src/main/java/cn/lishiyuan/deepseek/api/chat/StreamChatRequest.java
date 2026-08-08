@@ -1,6 +1,7 @@
 package cn.lishiyuan.deepseek.api.chat;
 
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
+import cn.lishiyuan.deepseek.api.chat.msg.ChatRequestMessage;
 import cn.lishiyuan.deepseek.api.common.StreamOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

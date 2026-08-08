@@ -1,4 +1,4 @@
-package cn.lishiyuan.deepseek.api.chat;
+package cn.lishiyuan.deepseek.api.chat.msg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

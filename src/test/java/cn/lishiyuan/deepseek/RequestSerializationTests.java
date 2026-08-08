@@ -1,6 +1,7 @@
 package cn.lishiyuan.deepseek;
 
 import cn.lishiyuan.deepseek.api.chat.*;
+import cn.lishiyuan.deepseek.api.chat.msg.UserMessage;
 import cn.lishiyuan.deepseek.api.common.FuncParamDefinition;
 import cn.lishiyuan.deepseek.config.enums.*;
 import com.fasterxml.jackson.annotation.JsonInclude;

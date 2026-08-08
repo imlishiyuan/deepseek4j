@@ -1,6 +1,7 @@
 package cn.lishiyuan.deepseek.api.chat;
 
 import cn.lishiyuan.deepseek.api.BaseRequest;
+import cn.lishiyuan.deepseek.api.chat.msg.ChatRequestMessage;
 import cn.lishiyuan.deepseek.api.common.StreamOptions;
 import cn.lishiyuan.deepseek.api.common.ToolChoice;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;

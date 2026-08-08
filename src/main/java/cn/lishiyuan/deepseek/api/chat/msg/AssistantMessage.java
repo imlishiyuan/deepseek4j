@@ -1,5 +1,6 @@
-package cn.lishiyuan.deepseek.api.chat;
+package cn.lishiyuan.deepseek.api.chat.msg;
 
+import cn.lishiyuan.deepseek.api.chat.ToolCall;
 import cn.lishiyuan.deepseek.config.enums.RoleEnums;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

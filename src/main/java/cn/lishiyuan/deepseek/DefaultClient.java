@@ -4,6 +4,7 @@ import cn.lishiyuan.deepseek.api.BaseRequest;
 import cn.lishiyuan.deepseek.api.BaseResponse;
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
 import cn.lishiyuan.deepseek.api.BaseStreamResponse;
+import cn.lishiyuan.deepseek.api.MultipartBodyRequest;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamEvent;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamRequest;
 import cn.lishiyuan.deepseek.config.Config;
@@ -70,22 +71,26 @@ public class DefaultClient implements Client {
     private HttpRequest.Builder defaultHeader(){
         return HttpRequest.newBuilder()
                 .header("Authorization", "Bearer " + config.getAccessKey())
-                .header("Content-Type", "application/json")
                 .header("Accept", "application/json");
     }
 
     private HttpRequest buildHttpRequest(Object body, String path, String method) {
+        HttpRequest.Builder builder = defaultHeader()
+                .timeout(config.getReadTimeout())
+                .uri(URI.create(config.getBaseUrl() + path));
+        if (body instanceof MultipartBodyRequest multipart) {
+            // 非 JSON 请求体（如 multipart 上传文件）：使用请求提供的 body 与 Content-Type
+            builder.header("Content-Type", multipart.contentType());
+            return builder.method(method, HttpRequest.BodyPublishers.ofByteArray(multipart.body())).build();
+        }
         String json;
         try {
             json = MAPPER.writeValueAsString(body);
         } catch (JsonProcessingException e) {
             throw new DeepSeekException("序列化请求失败：" + e.getMessage(), e);
         }
-        return defaultHeader()
-                .timeout(config.getReadTimeout())
-                .method(method, HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                .uri(URI.create(config.getBaseUrl() + path))
-                .build();
+        builder.header("Content-Type", "application/json");
+        return builder.method(method, HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8)).build();
     }
 
     @Override
@@ -96,6 +101,11 @@ public class DefaultClient implements Client {
     @Override
     public <T extends BaseResponse> Mono<T> post(BaseRequest<T> request) {
         return http(request,"POST");
+    }
+
+    @Override
+    public <T extends BaseResponse> Mono<T> delete(BaseRequest<T> request) {
+        return http(request, "DELETE");
     }
 
     @Override
@@ -115,7 +125,12 @@ public class DefaultClient implements Client {
                         } else {
                             DeepSeekErrorEnum deepSeekErrorEnum = DeepSeekErrorEnum.fromCode(response.statusCode());
                             log.debug(deepSeekErrorEnum.desc);
-                            sink.error(new DeepSeekException(deepSeekErrorEnum.desc));
+                            String reason = response.body();
+                            String message = deepSeekErrorEnum.desc;
+                            if (reason != null && !reason.isBlank()) {
+                                message += "。详情：" + reason;
+                            }
+                            sink.error(new DeepSeekException(message));
                         }
                     });
         });

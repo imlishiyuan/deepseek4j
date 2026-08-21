@@ -18,6 +18,8 @@ public interface Client {
 
     <T extends BaseResponse> Mono<T> post(BaseRequest<T> request);
 
+    <T extends BaseResponse> Mono<T> delete(BaseRequest<T> request);
+
     <T extends BaseStreamResponse> Flux<T> stream(BaseStreamRequest<T> request);
 
     /**

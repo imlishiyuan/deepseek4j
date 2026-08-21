@@ -140,6 +140,54 @@ public class ResponseSerializationTests {
     }
 
     @Test
+    @DisplayName("多模态：input_image 以 image_url 字符串 + detail 序列化")
+    public void testInputImageBlock() throws Exception {
+        InputItem msg = new InputItem();
+        msg.setRole("user");
+        msg.setContent(List.of(
+                ContentBlock.text("input_text", "这张图片里有什么？"),
+                ContentBlock.inputImage("https://example.com/image.jpg", "low")));
+
+        JsonNode content = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_V4_FLASH.code))
+                .get("input").get(0).get("content");
+        assertEquals("input_text", content.get(0).get("type").asText());
+        assertEquals("input_image", content.get(1).get("type").asText());
+        assertEquals("https://example.com/image.jpg", content.get(1).get("image_url").asText());
+        assertEquals("low", content.get(1).get("detail").asText());
+        assertNull(content.get(1).get("text"));
+    }
+
+    @Test
+    @DisplayName("多模态：input_image 以 file_id 引用 Files API 文件")
+    public void testInputImageByFileId() throws Exception {
+        InputItem msg = new InputItem();
+        msg.setRole("user");
+        msg.setContent(List.of(ContentBlock.inputImageByFileId("file-api-xxxxxxxxxxxxxxxx")));
+
+        JsonNode block = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_V4_FLASH.code))
+                .get("input").get(0).get("content").get(0);
+        assertEquals("input_image", block.get("type").asText());
+        assertEquals("file-api-xxxxxxxxxxxxxxxx", block.get("file_id").asText());
+        assertNull(block.get("image_url"), "file_id 与 image_url 互斥，image_url 不应输出");
+    }
+
+    @Test
+    @DisplayName("多模态：function_call_output 的 output 可携带图片内容块数组")
+    public void testFunctionCallOutputWithImage() throws Exception {
+        String b64 = "iVBORw0KGgo=";
+        InputItem output = new InputItem();
+        output.setType("function_call_output");
+        output.setCallId("fc1");
+        output.setOutput(List.of(ContentBlock.inputImage("data:image/png;base64," + b64)));
+
+        JsonNode node = serialize(ResponseRequest.create(List.of(output), ModelEnums.DEEPSEEK_V4_FLASH.code));
+        JsonNode out = node.get("input").get(0).get("output");
+        assertTrue(out.isArray(), "output 应为数组");
+        assertEquals("input_image", out.get(0).get("type").asText());
+        assertEquals("data:image/png;base64," + b64, out.get(0).get("image_url").asText());
+    }
+
+    @Test
     @DisplayName("reasoning.effort 映射正确")
     public void testReasoningEffort() throws Exception {
         ResponseRequest req = base("hi");

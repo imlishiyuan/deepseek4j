@@ -18,7 +18,7 @@ A Java client for the DeepSeek API.
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
 </dependency>
 ```
 
@@ -28,12 +28,10 @@ A Java client for the DeepSeek API.
 public static void main(String[] args) {
     Client client = new DefaultClient(accessKey);
 
-    ChatRequestMessage systemMessage = new ChatRequestMessage();
-    systemMessage.setRole(RoleEnums.SYSTEM.code);
+    SystemMessage systemMessage = new SystemMessage();
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequestMessage userMessage = new ChatRequestMessage();
-    userMessage.setRole(RoleEnums.USER.code);
+    UserMessage userMessage = new UserMessage();
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
@@ -72,12 +70,10 @@ public static void main(String[] args) {
 public static void main(String[] args) {
     Client client = new DefaultClient(accessKey);
 
-    ChatRequestMessage systemMessage = new ChatRequestMessage();
-    systemMessage.setRole(RoleEnums.SYSTEM.code);
+    SystemMessage systemMessage = new SystemMessage();
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequestMessage userMessage = new ChatRequestMessage();
-    userMessage.setRole(RoleEnums.USER.code);
+    UserMessage userMessage = new UserMessage();
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
@@ -91,12 +87,10 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    ChatRequestMessage systemMessage = new ChatRequestMessage();
-    systemMessage.setRole(RoleEnums.SYSTEM.code);
+    SystemMessage systemMessage = new SystemMessage();
     systemMessage.setContent("You are a helpful assistant");
 
-    ChatRequestMessage userMessage = new ChatRequestMessage();
-    userMessage.setRole(RoleEnums.USER.code);
+    UserMessage userMessage = new UserMessage();
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
@@ -163,6 +157,69 @@ public static void main(String[] args) {
             })
             .blockLast();
 }
+```
+
+### 9. Multimodal / Vision
+
+`deepseek-v4-flash-vision-exp` (a temporary model — pass the name as a plain string) accepts images in addition to text.
+With multimodal enabled, a `user` message's `content` becomes an array of content blocks instead of a plain string.
+Three block types are supported: `text` (text), `image_url` (external URL or base64 data URL), and `file`
+(a `file_id` reference or inline `file_data`).
+
+```java
+String visionModel = "deepseek-v4-flash-vision-exp";
+
+UserMessage message = new UserMessage();
+message.setContent(
+        ContentPart.text("What is in this image?"),
+        ContentPart.imageUrl("https://example.com/image.jpg"));   // external URL
+// or inline base64:  ContentPart.imageDataUrl("image/jpeg", base64);
+// or file reference: ContentPart.file("file-api-xxxxxxxxxxxxxxxx");
+
+ChatRequest chatRequest = ChatRequest.create(List.of(message), visionModel);
+ChatResponse chatResponse = client.post(chatRequest).block();
+System.out.println(chatResponse.getChoices().get(0).getMessage().getContent());
+```
+
+> Note: an external `image_url` must be publicly reachable and downloadable by the DeepSeek service (max 8192 chars).
+> Links with anti-hotlinking or unreachable hosts cause the service to report an image download failure — use a base64
+> data URL or a Files API `file_id` instead.
+
+The Responses API also supports multimodal: images are carried in `input_image` content blocks
+(`image_url` is a string, or `file_id` to reference an uploaded file — mutually exclusive; optional `detail`).
+
+```java
+InputItem item = new InputItem();
+item.setRole("user");
+item.setContent(List.of(
+        ContentBlock.text("input_text", "Describe this image."),
+        ContentBlock.inputImage("https://example.com/image.jpg", "low"))); // or ContentBlock.inputImageByFileId(fileId)
+
+ResponseResult result = client.post(ResponseRequest.create(List.of(item), visionModel)).block();
+```
+
+### 10. Files API
+
+Upload images and reuse them by `file_id` in multimodal requests (max 64 MiB per file, see the
+[docs](https://api-docs.deepseek.com/zh-cn/guides/files_api/)).
+
+```java
+// Upload a file
+byte[] imageBytes = Files.readAllBytes(Paths.get("image.jpg"));
+UploadFileRequest upload = UploadFileRequest.create(imageBytes, "image.jpg");
+FileObject file = client.post(upload).block();
+String fileId = file.getId();   // file-api-xxxxxxxxxxxxxxxx
+
+// List files
+ListFilesRequest listReq = ListFilesRequest.create();
+listReq.setLimit(50);
+FileListResponse files = client.get(listReq).block();
+
+// Retrieve a single file
+FileObject info = client.get(RetrieveFileRequest.create(fileId)).block();
+
+// Delete a file
+DeleteFileResponse deleted = client.delete(DeleteFileRequest.create(fileId)).block();
 ```
 
 ## License

@@ -6,7 +6,7 @@
 
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 
     <packaging>jar</packaging>
 
@@ -177,14 +177,22 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- jarmd-maven-plugin：jar.md 规范参考工具。当前先声明（可手动 mvn jarmd:... 调用）。
-                 待项目根生成 llms.txt 与 src/main/resources/META-INF/jar.md 后，
-                 再在下方 execution 中启用 attach-facade（package 阶段附加 -llms.txt 构件）
-                 与 validate（verify 阶段执行规范 §9.3 校验）。 -->
+            <!-- jarmd-maven-plugin：jar.md 规范参考工具。
+                 attach-facade（package）把项目根的 llms.txt 作为 classifier=llms、type=txt 的构件附加，
+                 validate（verify）执行规范 §9.3 校验（frontmatter 版本一致、门面预算、Sections 链接等）。 -->
             <plugin>
                 <groupId>cn.lishiyuan</groupId>
                 <artifactId>jarmd-maven-plugin</artifactId>
                 <version>${jarmd-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>jarmd</id>
+                        <goals>
+                            <goal>attach-facade</goal>
+                            <goal>validate</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

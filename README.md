@@ -18,7 +18,7 @@ A Java client for the DeepSeek API.
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -220,6 +220,65 @@ FileObject info = client.get(RetrieveFileRequest.create(fileId)).block();
 
 // Delete a file
 DeleteFileResponse deleted = client.delete(DeleteFileRequest.create(fileId)).block();
+```
+
+### 11. Agent (a minimal agent-loop example)
+
+`DefaultAgent` is a **minimal** agent loop showing how to combine chat with tool calling — an example, not a
+production-grade framework.
+
+```java
+// 1) Expose plain methods as tools with annotations
+public class MyTools {
+    @DefTool(name = "get_weather", description = "Get the weather of a city")
+    public Weather getWeather(@DefParam(name = "city", description = "City name") String city) {
+        return new Weather(city, 18);
+    }
+    public record Weather(String city, int temperatureC) { }
+}
+
+// 2) Configure and start the agent
+AgentConfig config = new AgentConfig("my-agent");
+config.setSystemPrompt("You are a helpful assistant.");
+config.setToolsCaller(new DefaultToolsCaller(List.of(new MyTools())));
+Agent agent = new DefaultAgent(client, config);
+
+// 3) Send a message; the returned Mono completes when its turn ends
+UserMessage message = new UserMessage();
+message.setContent("What's the weather in Altay today?");
+ChatResponse response = agent.send(message, SendTimeEnums.NEXT_TURN).block();
+System.out.println(response.getChoices().get(0).getMessage().getContent());
+```
+
+- A **turn** = keep calling the model until `finish_reason` is no longer `tool_calls`: model asks for tools →
+  run them locally → feed the results back → call again, until a final answer is produced.
+- **Send timing**: `SendTimeEnums.NEXT_REQUEST` folds a message into the current turn's next model request
+  (it can interrupt a running tool loop); `NEXT_TURN` starts the next turn after the current one finishes.
+  All messages consumed by a turn share that turn's final response.
+- Tool parameters may be `String`/wrappers/enums/arrays/`List`/`Map`/POJOs/records (nested included), described
+  via `@DefParam`.
+- To see per-request / per-turn debug logs, set the `cn.lishiyuan.deepseek.agent.request` and
+  `cn.lishiyuan.deepseek.agent.loop` loggers to DEBUG.
+
+> ⚠️ This is an example with no production guarantee: no error recovery (a single failed request terminates the
+> loop) and no context compaction (`history` grows unbounded).
+
+### 12. jar.md (AI-facing docs shipped with the JAR)
+
+This project follows the [jar.md specification](https://github.com/imlishiyuan/jar.md): usage documentation aimed at
+AI agents ships together with the artifact, so an agent can discover and progressively load it from the Maven
+coordinates alone.
+
+- **`META-INF/jar.md`**: the manual embedded in the jar (YAML frontmatter + fixed sections), packaged automatically;
+- **`deepseek4j-{version}-llms.txt`**: a standalone facade artifact (classifier `llms`) for a quick "is this the
+  library I need" check;
+- `jarmd-maven-plugin` attaches the facade (`attach-facade`) and validates spec conformance during `verify`.
+
+```bash
+# Read the manual (frontmatter is within the first 40 lines)
+unzip -p deepseek4j-1.0.7.jar META-INF/jar.md | head -n 40
+# Or fetch the facade
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.7/deepseek4j-1.0.7-llms.txt
 ```
 
 ## License

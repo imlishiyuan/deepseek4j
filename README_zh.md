@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -215,6 +215,55 @@ FileObject info = client.get(RetrieveFileRequest.create(fileId)).block();
 
 // 删除文件
 DeleteFileResponse deleted = client.delete(DeleteFileRequest.create(fileId)).block();
+```
+
+### 11. Agent（简易 agent loop 示例）
+
+`DefaultAgent` 是一个**最小实现**的 agent loop，用来演示"对话 + 工具调用"怎么组合，不是生产级框架。
+
+```java
+// 1) 用注解把普通方法定义成工具
+public class MyTools {
+    @DefTool(name = "get_weather", description = "查询城市天气")
+    public Weather getWeather(@DefParam(name = "city", description = "城市名") String city) {
+        return new Weather(city, 18);
+    }
+    public record Weather(String city, int temperatureC) { }
+}
+
+// 2) 配置并启动 agent
+AgentConfig config = new AgentConfig("my-agent");
+config.setSystemPrompt("你是助手");
+config.setToolsCaller(new DefaultToolsCaller(List.of(new MyTools())));
+Agent agent = new DefaultAgent(client, config);
+
+// 3) 发消息：返回的 Mono 在该消息所属轮次结束时完成
+UserMessage message = new UserMessage();
+message.setContent("阿勒泰今天天气怎么样？");
+ChatResponse response = agent.send(message, SendTimeEnums.NEXT_TURN).block();
+System.out.println(response.getChoices().get(0).getMessage().getContent());
+```
+
+- **一轮（turn）** = 反复调用模型直到 `finish_reason` 不再是 `tool_calls`：模型要工具 → 本地执行 → 结果回灌 → 再请求，直到给出最终回答。
+- **发送时机**：`SendTimeEnums.NEXT_REQUEST` 把消息并入当前轮的下一次模型请求（可打断正在进行的工具循环）；`NEXT_TURN` 等当前轮结束后作为下一轮开头。同一轮内被消费的消息共享该轮最终响应。
+- 工具参数支持 `String`/包装类型/枚举/数组/`List`/`Map`/POJO/record（含嵌套），说明写在 `@DefParam` 上。
+- 想看 agent 的请求与轮次 debug 日志：把 `cn.lishiyuan.deepseek.agent.request` 与 `.loop` 两个 logger 设为 DEBUG。
+
+> ⚠️ 这是示例，不承诺生产可用：没有错误恢复（一次请求失败会终止 loop）、没有上下文压缩（`history` 无界增长）。
+
+### 12. jar.md（随 jar 发布的 AI 使用说明）
+
+本项目遵循 [jar.md 规范](https://github.com/imlishiyuan/jar.md)：把「给 AI agent 看的用法说明」随制品一起发布，agent 只凭 Maven 坐标就能确定性地发现并渐进加载它。
+
+- **`META-INF/jar.md`**：内置在 jar 里的说明书（YAML frontmatter + 固定小节），随 jar 自动打包；
+- **`deepseek4j-{version}-llms.txt`**：单独的门面构件（classifier `llms`），用于"这个库是不是我要的"的快速判断；
+- 由 `jarmd-maven-plugin` 的 `attach-facade` 附加门面、`validate` 在 `verify` 阶段做规范一致性校验。
+
+```bash
+# 直接看说明书（前 40 行内是 frontmatter）
+unzip -p deepseek4j-1.0.7.jar META-INF/jar.md | head -n 40
+# 或抓门面
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.7/deepseek4j-1.0.7-llms.txt
 ```
 
 ## 许可证

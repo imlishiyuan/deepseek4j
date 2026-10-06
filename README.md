@@ -35,7 +35,7 @@ public static void main(String[] args) {
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
     ChatResponse chatResponse = client.post(chatRequest).block();
     System.out.println(chatResponse.getChoices().get(0).getMessage().getContent());
 }
@@ -77,7 +77,7 @@ public static void main(String[] args) {
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
     ChatResponse chatResponse = client.post(chatRequest).block();
     System.out.println(chatResponse.getChoices().get(0).getMessage().getContent());
 }
@@ -94,7 +94,7 @@ public static void main(String[] args) {
     userMessage.setContent("Hello");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
 
     client.stream(chatRequest)
             .doOnNext(chatResponse -> {
@@ -108,7 +108,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    FimRequest fimRequest = FimRequest.create("It's so windy and cold today", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    FimRequest fimRequest = FimRequest.create("It's so windy and cold today", ModelEnums.DEEPSEEK_FLASH.code);
     FimResponse fimResponse = client.post(fimRequest).block();
     Assertions.assertNotNull(fimResponse, "fimResponse must not be null");
 }
@@ -118,7 +118,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    StreamFimRequest fimRequest = StreamFimRequest.create("It's so windy and cold today", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    StreamFimRequest fimRequest = StreamFimRequest.create("It's so windy and cold today", ModelEnums.DEEPSEEK_FLASH.code);
     client.stream(fimRequest)
             .doOnNext(fimResponse -> {
                 // handle each incremental chunk
@@ -131,7 +131,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    ResponseRequest request = ResponseRequest.create("Hello", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ResponseRequest request = ResponseRequest.create("Hello", ModelEnums.DEEPSEEK_FLASH.code);
     ResponseResult result = client.post(request).block();
     // extract the text of the first message output item
     String text = result.getOutput().stream()
@@ -147,7 +147,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    ResponseStreamRequest request = ResponseStreamRequest.create("Hello", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ResponseStreamRequest request = ResponseStreamRequest.create("Hello", ModelEnums.DEEPSEEK_FLASH.code);
     client.streamResponse(request)
             .doOnNext(event -> {
                 // handle deltas by event type

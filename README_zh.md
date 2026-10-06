@@ -35,7 +35,7 @@ public static void main(String[] args) {
     userMessage.setContent("你好");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
     ChatResponse chatResponse = client.post(chatRequest).block();
     System.out.println(chatResponse.getChoices().get(0).getMessage().getContent());
 }
@@ -77,7 +77,7 @@ public static void main(String[] args) {
     userMessage.setContent("你好");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
     ChatResponse chatResponse = client.post(chatRequest).block();
     System.out.println(chatResponse.getChoices().get(0).getMessage().getContent());
 }
@@ -94,7 +94,7 @@ public static void main(String[] args) {
     userMessage.setContent("你好");
 
     List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-    StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+    StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
 
     client.stream(chatRequest)
             .doOnNext(chatResponse -> {
@@ -108,7 +108,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_FLASH.code);
     FimResponse fimResponse = client.post(fimRequest).block();
     Assertions.assertNotNull(fimResponse, "fimResponse不应该为空");
 }
@@ -118,7 +118,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_FLASH.code);
     client.stream(fimRequest)
             .doOnNext(fimResponse -> {
                 // 处理每个增量响应
@@ -131,7 +131,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    ResponseRequest request = ResponseRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ResponseRequest request = ResponseRequest.create("你好", ModelEnums.DEEPSEEK_FLASH.code);
     ResponseResult result = client.post(request).block();
     // 取首个 message 项的文本
     String text = result.getOutput().stream()
@@ -147,7 +147,7 @@ public static void main(String[] args) {
 
 ```java
 public static void main(String[] args) {
-    ResponseStreamRequest request = ResponseStreamRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+    ResponseStreamRequest request = ResponseStreamRequest.create("你好", ModelEnums.DEEPSEEK_FLASH.code);
     client.streamResponse(request)
             .doOnNext(event -> {
                 // 按事件类型处理增量

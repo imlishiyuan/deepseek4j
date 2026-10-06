@@ -47,15 +47,24 @@
         <reactor.version>3.6.6</reactor.version>
         <slf4j.version>2.0.13</slf4j.version>
         <junit.version>5.5.2</junit.version>
+        <commons-lang.version>3.18.0</commons-lang.version>
 
         <!-- plugin versions -->
         <central-publishing-plugin.version>0.7.0</central-publishing-plugin.version>
         <maven-javadoc-plugin.version>3.2.0</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
         <maven-gpg-plugin.version>1.5</maven-gpg-plugin.version>
+        <!-- jar.md 规范参考插件版本 -->
+        <jarmd-plugin.version>0.0.1</jarmd-plugin.version>
     </properties>
 
     <dependencies>
+        <!--  commons      -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang.version}</version>
+        </dependency>
         <!--    lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -77,6 +86,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <!--  测试时提供日志实现，让 agent 的 debug 日志可见  -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 <!--        junit-->
         <dependency>
@@ -160,6 +176,15 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- jarmd-maven-plugin：jar.md 规范参考工具。当前先声明（可手动 mvn jarmd:... 调用）。
+                 待项目根生成 llms.txt 与 src/main/resources/META-INF/jar.md 后，
+                 再在下方 execution 中启用 attach-facade（package 阶段附加 -llms.txt 构件）
+                 与 validate（verify 阶段执行规范 §9.3 校验）。 -->
+            <plugin>
+                <groupId>cn.lishiyuan</groupId>
+                <artifactId>jarmd-maven-plugin</artifactId>
+                <version>${jarmd-plugin.version}</version>
             </plugin>
         </plugins>
     </build>

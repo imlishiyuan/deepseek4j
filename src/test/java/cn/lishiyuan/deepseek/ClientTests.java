@@ -3,7 +3,6 @@ package cn.lishiyuan.deepseek;
 import cn.lishiyuan.deepseek.api.EmptyRequest;
 import cn.lishiyuan.deepseek.api.chat.*;
 import cn.lishiyuan.deepseek.api.chat.msg.*;
-import cn.lishiyuan.deepseek.api.common.FuncParamDefinition;
 import cn.lishiyuan.deepseek.api.common.Usage;
 import cn.lishiyuan.deepseek.api.fim.StreamFimRequest;
 import cn.lishiyuan.deepseek.api.response.ResponseRequest;
@@ -54,7 +53,7 @@ public class ClientTests {
         userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-        ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
         Thinking thinking = new Thinking();
         thinking.setType(ThinkingEnums.ENABLED.code);
         thinking.setReasoningEffort(ThinkingEffortEnums.MAX.code);
@@ -73,7 +72,7 @@ public class ClientTests {
         userMessage.setContent("请仿照《沁园春·长沙》写一篇词，题为《沁园春·西安》");
 
         List<ChatRequestMessage> messageList = List.of(systemMessage, userMessage);
-        StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_V4_FLASH.code);
+        StreamChatRequest chatRequest = StreamChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
 
         client.stream(chatRequest)
                 .doOnNext(chatResponse -> Assertions.assertNotNull(chatResponse,"chatResponse"))
@@ -83,7 +82,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试FIM")
     public void testFIM(){
-        FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        FimRequest fimRequest = FimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_FLASH.code);
         FimResponse fimResponse = client.post(fimRequest).block();
         Assertions.assertNotNull(fimResponse,"fimResponse不应该为空");
     }
@@ -91,7 +90,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试流FIM")
     public void testStreamFIM() {
-        StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        StreamFimRequest fimRequest = StreamFimRequest.create("今天的风好大天气好冷", ModelEnums.DEEPSEEK_FLASH.code);
         client.stream(fimRequest)
                 .doOnNext(fimResponse -> Assertions.assertNotNull(fimResponse,"fimResponse"))
                 .blockFirst();
@@ -116,7 +115,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试 responses")
     public void testResponses(){
-        ResponseRequest request = ResponseRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ResponseRequest request = ResponseRequest.create("你好", ModelEnums.DEEPSEEK_FLASH.code);
         ResponseResult result = client.post(request).block();
         Assertions.assertNotNull(result,"responseResult不应该为空");
         Assertions.assertEquals("response", result.getObject(),"object 应为 response");
@@ -126,7 +125,7 @@ public class ClientTests {
     @Test
     @DisplayName("测试流式 responses")
     public void testStreamResponses(){
-        ResponseStreamRequest request = ResponseStreamRequest.create("你好", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ResponseStreamRequest request = ResponseStreamRequest.create("你好", ModelEnums.DEEPSEEK_FLASH.code);
         client.streamResponse(request)
                 .doOnNext(event -> Assertions.assertNotNull(event,"event不应该为空"))
                 .blockLast();
@@ -141,7 +140,8 @@ public class ClientTests {
         getWeatherFn.setDescription("获取指定城市的天气");
         FunctionParameter functionParameter = new FunctionParameter();
         functionParameter.setType(FuncParamEnums.OBJ.code);
-        FuncParamDefinition funcParamDefinition = new FuncParamDefinition();
+
+        FunctionParameter funcParamDefinition = new FunctionParameter();
         funcParamDefinition.setType(FuncParamEnums.STR.code);
         funcParamDefinition.setDescription("城市名称");
         functionParameter.setProperties(Map.of("city",funcParamDefinition));
@@ -154,7 +154,7 @@ public class ClientTests {
         UserMessage userMessage = new UserMessage();
         userMessage.setContent("上海今天天气怎么样？");
 
-        ChatRequest request = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ChatRequest request = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
         request.setTools(List.of(getWeatherTool));
         // 首轮强制调用工具；后续轮由编排自动放开为 auto，让模型给出最终回复
 
@@ -219,7 +219,7 @@ public class ClientTests {
         getWeatherFn.setDescription("获取指定城市的天气");
         FunctionParameter functionParameter = new FunctionParameter();
         functionParameter.setType(FuncParamEnums.OBJ.code);
-        FuncParamDefinition funcParamDefinition = new FuncParamDefinition();
+        FunctionParameter funcParamDefinition = new FunctionParameter();
         funcParamDefinition.setType(FuncParamEnums.STR.code);
         funcParamDefinition.setDescription("城市名称");
         functionParameter.setProperties(Map.of("city",funcParamDefinition));
@@ -232,7 +232,7 @@ public class ClientTests {
         UserMessage userMessage = new UserMessage();
         userMessage.setContent("上海今天天气怎么样？");
 
-        StreamChatRequest request = StreamChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_V4_FLASH.code);
+        StreamChatRequest request = StreamChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
         request.setTools(List.of(getWeatherTool));
         // 首轮强制调用工具；后续轮由编排自动放开为 auto，让模型给出最终回复
 

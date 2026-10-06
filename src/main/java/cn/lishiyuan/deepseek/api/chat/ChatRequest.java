@@ -21,7 +21,7 @@ public class ChatRequest extends BaseRequest<ChatResponse> {
 
     // deepseek-v4-flash, deepseek-v4-pro
     @JsonProperty("model")
-    private String model = ModelEnums.DEEPSEEK_V4_FLASH.code;
+    private String model = ModelEnums.DEEPSEEK_FLASH.code;
     /**
      * 思考模式
      */

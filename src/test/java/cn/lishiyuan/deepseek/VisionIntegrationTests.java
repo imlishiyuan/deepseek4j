@@ -37,7 +37,7 @@ import java.util.List;
 public class VisionIntegrationTests {
 
     /** 临时视觉模型，模型名以字符串直接传入（未加入 ModelEnums）。 */
-    private static final String VISION_MODEL = "deepseek-v4-flash-vision-exp";
+    private static final String VISION_MODEL = "deepseek-flash";
 
     private static final Client CLIENT = initClient();
 

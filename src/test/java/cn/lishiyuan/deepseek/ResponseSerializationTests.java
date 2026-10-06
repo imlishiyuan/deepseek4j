@@ -59,14 +59,14 @@ public class ResponseSerializationTests {
     }
 
     private ResponseRequest base(String input) {
-        return ResponseRequest.create(input, ModelEnums.DEEPSEEK_V4_FLASH.code);
+        return ResponseRequest.create(input, ModelEnums.DEEPSEEK_FLASH.code);
     }
 
     @Test
-    @DisplayName("默认请求：model=deepseek-v4-flash，stream=false，无 path/responseClass 泄漏")
+    @DisplayName("默认请求：model 为 ModelEnums.DEEPSEEK_FLASH.code，stream=false，无 path/responseClass 泄漏")
     public void testDefaults() throws Exception {
         JsonNode node = serialize(base("hi"));
-        assertEquals("deepseek-v4-flash", node.get("model").asText());
+        assertEquals(ModelEnums.DEEPSEEK_FLASH.code, node.get("model").asText());
         assertEquals(false, node.get("stream").asBoolean());
         assertEquals("hi", node.get("input").asText());
         assertNull(node.get("path"));
@@ -99,7 +99,7 @@ public class ResponseSerializationTests {
         out.setCallId("call_1");
         out.setOutput("{\"temp\":30}");
 
-        ResponseRequest req = ResponseRequest.create(List.of(msg, fc, out), ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ResponseRequest req = ResponseRequest.create(List.of(msg, fc, out), ModelEnums.DEEPSEEK_FLASH.code);
         JsonNode node = serialize(req);
 
         assertTrue(node.get("input").isArray(), "input 应为数组");
@@ -132,7 +132,7 @@ public class ResponseSerializationTests {
         msg.setRole("user");
         msg.setContent(List.of(block));
 
-        JsonNode node = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_V4_FLASH.code));
+        JsonNode node = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_FLASH.code));
         JsonNode content = node.get("input").get(0).get("content");
         assertTrue(content.isArray(), "content 应为数组");
         assertEquals("input_text", content.get(0).get("type").asText());
@@ -148,7 +148,7 @@ public class ResponseSerializationTests {
                 ContentBlock.text("input_text", "这张图片里有什么？"),
                 ContentBlock.inputImage("https://example.com/image.jpg", "low")));
 
-        JsonNode content = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_V4_FLASH.code))
+        JsonNode content = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_FLASH.code))
                 .get("input").get(0).get("content");
         assertEquals("input_text", content.get(0).get("type").asText());
         assertEquals("input_image", content.get(1).get("type").asText());
@@ -164,7 +164,7 @@ public class ResponseSerializationTests {
         msg.setRole("user");
         msg.setContent(List.of(ContentBlock.inputImageByFileId("file-api-xxxxxxxxxxxxxxxx")));
 
-        JsonNode block = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_V4_FLASH.code))
+        JsonNode block = serialize(ResponseRequest.create(List.of(msg), ModelEnums.DEEPSEEK_FLASH.code))
                 .get("input").get(0).get("content").get(0);
         assertEquals("input_image", block.get("type").asText());
         assertEquals("file-api-xxxxxxxxxxxxxxxx", block.get("file_id").asText());
@@ -180,7 +180,7 @@ public class ResponseSerializationTests {
         output.setCallId("fc1");
         output.setOutput(List.of(ContentBlock.inputImage("data:image/png;base64," + b64)));
 
-        JsonNode node = serialize(ResponseRequest.create(List.of(output), ModelEnums.DEEPSEEK_V4_FLASH.code));
+        JsonNode node = serialize(ResponseRequest.create(List.of(output), ModelEnums.DEEPSEEK_FLASH.code));
         JsonNode out = node.get("input").get(0).get("output");
         assertTrue(out.isArray(), "output 应为数组");
         assertEquals("input_image", out.get(0).get("type").asText());
@@ -283,10 +283,10 @@ public class ResponseSerializationTests {
     @Test
     @DisplayName("StreamRequest：stream=true")
     public void testStreamRequest() throws Exception {
-        ResponseStreamRequest req = ResponseStreamRequest.create("hi", ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ResponseStreamRequest req = ResponseStreamRequest.create("hi", ModelEnums.DEEPSEEK_FLASH.code);
         JsonNode node = serialize(req);
         assertEquals(true, node.get("stream").asBoolean());
-        assertEquals("deepseek-v4-flash", node.get("model").asText());
+        assertEquals(ModelEnums.DEEPSEEK_FLASH.code, node.get("model").asText());
         assertNull(node.get("path"));
         assertNull(node.get("responseClass"));
     }

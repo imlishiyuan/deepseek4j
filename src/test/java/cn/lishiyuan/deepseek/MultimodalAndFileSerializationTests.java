@@ -47,7 +47,7 @@ public class MultimodalAndFileSerializationTests {
             .build();
 
     private JsonNode serialize(UserMessage m) throws Exception {
-        ChatRequest req = ChatRequest.create(List.of(m), ModelEnums.DEEPSEEK_V4_FLASH.code);
+        ChatRequest req = ChatRequest.create(List.of(m), ModelEnums.DEEPSEEK_FLASH.code);
         return MAPPER.readTree(MAPPER.writeValueAsString(req)).get("messages").get(0).get("content");
     }
 

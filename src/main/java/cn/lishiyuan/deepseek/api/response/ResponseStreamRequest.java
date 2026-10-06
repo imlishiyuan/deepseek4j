@@ -18,7 +18,7 @@ public class ResponseStreamRequest extends BaseStreamRequest<ResponseStreamEvent
 
     /** 仅支持 deepseek-v4-flash */
     @JsonProperty("model")
-    private String model = ModelEnums.DEEPSEEK_V4_FLASH.code;
+    private String model = ModelEnums.DEEPSEEK_FLASH.code;
 
     /**
      * 输入：可为字符串（视为单条 user 消息）或输入项数组 {@code List<InputItem>}。

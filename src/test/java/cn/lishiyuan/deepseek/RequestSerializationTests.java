@@ -2,7 +2,6 @@ package cn.lishiyuan.deepseek;
 
 import cn.lishiyuan.deepseek.api.chat.*;
 import cn.lishiyuan.deepseek.api.chat.msg.UserMessage;
-import cn.lishiyuan.deepseek.api.common.FuncParamDefinition;
 import cn.lishiyuan.deepseek.config.enums.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -42,7 +41,7 @@ public class RequestSerializationTests {
     private ChatRequest baseRequest() {
         UserMessage m = new UserMessage();
         m.setContent("hi");
-        return ChatRequest.create(List.of(m), ModelEnums.DEEPSEEK_V4_FLASH.code);
+        return ChatRequest.create(List.of(m), ModelEnums.DEEPSEEK_FLASH.code);
     }
 
     @Test
@@ -53,7 +52,7 @@ public class RequestSerializationTests {
         assertNull(node.get("thinking").get("reasoning_effort"));
         assertNull(node.get("path"));
         assertNull(node.get("responseClass"));
-        assertEquals("deepseek-v4-flash", node.get("model").asText());
+        assertEquals(ModelEnums.DEEPSEEK_FLASH.code, node.get("model").asText());
         assertEquals(false, node.get("stream").asBoolean());
     }
 
@@ -77,7 +76,7 @@ public class RequestSerializationTests {
         fn.setName("get_weather");
         FunctionParameter functionParameter = new FunctionParameter();
         functionParameter.setType(FuncParamEnums.OBJ.code);
-        FuncParamDefinition funcParamDefinition = new FuncParamDefinition();
+        FunctionParameter funcParamDefinition = new FunctionParameter();
         funcParamDefinition.setType(FuncParamEnums.STR.code);
         funcParamDefinition.setDescription("城市名称");
         functionParameter.setProperties(Map.of("city",funcParamDefinition));

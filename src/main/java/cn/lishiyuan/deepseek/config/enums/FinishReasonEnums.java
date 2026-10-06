@@ -13,6 +13,7 @@ public enum FinishReasonEnums {
     CONTENT_FILTER("content_filter","输出触发过滤策略"),
     TOOL_CALLS("tool_calls","模型发起 tool 调用"),
     INSUFFICIENT_SYSTEM_RESOURCE("insufficient_system_resource","系统推理资源不足，生成被打断"),
+    ABORTED("aborted","生成过程被中断"),
     ;
     public final String code;
     public final String desc;

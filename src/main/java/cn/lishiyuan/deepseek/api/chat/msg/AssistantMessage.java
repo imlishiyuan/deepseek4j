@@ -5,6 +5,7 @@ import cn.lishiyuan.deepseek.config.enums.RoleEnums;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 

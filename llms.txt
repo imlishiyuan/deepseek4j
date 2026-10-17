@@ -1,10 +1,10 @@
 # DeepSeek4j
 
-> 一个 DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API，以及一个简易的 agent loop。
+> 一个 DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、网页搜索与抓取、Responses API，以及一个简易的 agent loop。
 
 ## Purpose
-- 解决：在 Java 里调 DeepSeek 时要自己处理 HTTP、SSE 流式、多模态内容块、工具调用与文件 multipart 上传
-- 核心能力：Chat / StreamChat、FIM、Responses（含命名 SSE）、多模态图像、Files API、DefaultAgent（工具调用循环）
+- 解决：在 Java 里调 DeepSeek 时要自己处理 HTTP、SSE 流式、多模态内容块、工具调用、文件上传与网页搜索/抓取
+- 核心能力：Chat / StreamChat、FIM、Responses（含命名 SSE）、多模态图像、Files API、网页搜索与抓取（Search/Fetch）、DefaultAgent（工具调用循环）
 - 不适用：需要记忆压缩、多 agent 编排、持久化会话的生产级 Agent 场景
 
 ## Quick Start
@@ -23,7 +23,7 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 - JDK: 17+
 - Reactor 3.x / Jackson 2.17 / SLF4J 2.0 / commons-lang3
 - 模型：`DEEPSEEK_FLASH`、`DEEPSEEK_V4_PRO`；多模态为临时模型 `deepseek-v4-flash-vision-exp`
-- 最新稳定版: 1.0.7
+- 最新稳定版: 1.0.8
 
 ## Docs
 完整使用说明内置于 JAR 的 META-INF/jar.md（jar.md 规范，支持渐进式加载）。

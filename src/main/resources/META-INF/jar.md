@@ -2,7 +2,7 @@
 spec: jar.md/0.0.1
 groupId: cn.lishiyuan
 artifactId: deepseek4j
-version: 1.0.7
+version: 1.0.8
 name: DeepSeek4j
 summary: DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API 与简易 agent loop。
 jdk: 17+
@@ -31,7 +31,7 @@ DeepSeek API 的 Java 客户端。基于 Reactor（`Mono`/`Flux`）+ JDK 17 的 
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
@@ -75,6 +75,7 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 | `StreamChatRequest` | 对话补全（流式，`Flux<StreamChatResponse>`） | 低 |
 | `ResponseRequest` / `ResponseStreamRequest` | Responses API（无状态，多轮需重发完整 input） | 中 |
 | `UploadFileRequest` / `ListFilesRequest` / `RetrieveFileRequest` / `DeleteFileRequest` | Files API | 低 |
+| `SearchRequest` / `FetchRequest` | 网页搜索与抓取（`/v1/tools/search`、`/v1/tools/fetch`；只读、按次计费） | 低 |
 | `Agent` / `DefaultAgent` | 简易 agent loop（工具调用循环） | 中 |
 | `DefaultToolsCaller` + `@DefTool` / `@DefParam` | 把普通 Java 方法暴露成工具 | 中 |
 
@@ -122,6 +123,20 @@ FileObject file = client.post(UploadFileRequest.create(bytes, "image.jpg")).bloc
 String fileId = file.getId();
 ```
 
+### 网页搜索与抓取
+
+```java
+SearchRequest searchRequest = SearchRequest.create("DeepSeek V4 site:github.com lang:zh after:2025");
+searchRequest.setCount(5);
+searchRequest.setNeedContent(true);
+SearchResponse search = client.post(searchRequest).block();
+
+FetchResponse page = client.post(FetchRequest.create("https://example.com/article")).block();
+String markdown = page.getContent();
+```
+
+Search 的 `results` 为空数组 = 正常无结果（不计费）；Fetch 抓不到可用正文时返回 404。
+
 ### Agent loop
 
 ```java
@@ -156,15 +171,22 @@ public class MyTools {
 5. **工具参数名必须与 Jackson 的反序列化名一致**。嵌套属性不要用 `@DefParam.name` 改名：schema 会告诉模型新名字，但 Jackson 按原属性名绑定，值会静默丢失（record 尤其明显，它没有 setter）。
 6. **工具参数用包装类型，不要用基本类型**。所有 `@DefParam` 参数都被标为 required；缺参时该位置传 `null`，基本类型会直接抛 `IllegalArgumentException`。
 7. **`Mono` 是冷的**。不订阅就不会发请求；`.block()` 真会阻塞，响应式链路里请用 `flatMap` / `concatMap`。
+8. **Search / Fetch 的错误码要区别对待**。408 / 429 / 5xx 可等待后重试；402 需先充值；其它 4xx（400 参数错、403 被安全策略拒绝、404 抓不到可用正文）改请求之前不要重试。Search 返回空 `results` 是正常结果，不是错误。
 
 ## Migration Guide
+
+### 1.0.7 → 1.0.8
+
+1. 搜索结果 `SearchResponse.Result.date` 由 `String` 改为 `java.util.Date`：接口返回的 RFC 3339 字符串由 Jackson 自动解析（`+00:00`、`Z`、其它时区偏移均可），仍是可空字段。需要绝对时间时用 `getDate().toInstant()`（`Date#toString` 会带 JVM 默认时区）。
 
 ### 1.0.6 → 1.0.7
 
 1. 新增示例级 agent loop：`DefaultAgent` / `Agent` / `AgentConfig` / `DefaultToolsCaller` + `@DefTool` / `@DefParam`。
-2. 请求 / 轮次 debug 日志：logger `cn.lishiyuan.deepseek.agent.request` 与 `.loop`。
-3. 随制品发布 jar.md 文档（`META-INF/jar.md` 说明书 + `-llms.txt` 门面）。
-4. 工具参数支持 record / 嵌套 POJO / 数组 / 集合（数组与集合的 schema 会生成 `items`）。
+2. 新增网页搜索与抓取：`SearchRequest` / `SearchResponse` / `FetchRequest` / `FetchResponse`（`/v1/tools/search`、`/v1/tools/fetch`）。
+3. 补充错误码：403 / 404 / 408 / 413 / 504。
+4. 请求 / 轮次 debug 日志：logger `cn.lishiyuan.deepseek.agent.request` 与 `.loop`。
+5. 随制品发布 jar.md 文档（`META-INF/jar.md` 说明书 + `-llms.txt` 门面）。
+6. 工具参数支持 record / 嵌套 POJO / 数组 / 集合（数组与集合的 schema 会生成 `items`）。
 
 ### 1.0.5 → 1.0.6
 

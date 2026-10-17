@@ -18,7 +18,7 @@ A Java client for the DeepSeek API.
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
@@ -222,7 +222,41 @@ FileObject info = client.get(RetrieveFileRequest.create(fileId)).block();
 DeleteFileResponse deleted = client.delete(DeleteFileRequest.create(fileId)).block();
 ```
 
-### 11. Agent (a minimal agent-loop example)
+### 11. Web Search & Fetch
+
+Two **read-only** endpoints backed by DeepSeek's own search engine (Bearer auth, billed per request, Search and
+Fetch are rate-limited independently):
+
+- **Search**: `POST /v1/tools/search` — search the web by query, returning structured results;
+- **Fetch**: `POST /v1/tools/fetch` — fetch a single page, returning its title and Markdown content.
+
+```java
+// Search: site: / -site: / "" / lang: / after: / before: syntax is passed through to the search service
+SearchRequest searchRequest = SearchRequest.create("DeepSeek V4 site:github.com lang:zh after:2025");
+searchRequest.setCount(5);              // 1..50, default 10
+searchRequest.setNeedContent(true);     // set true to get page content (off by default)
+
+SearchResponse search = client.post(searchRequest).block();
+for (SearchResponse.Result r : search.getResults()) {
+    System.out.println(r.getTitle() + " -> " + r.getUrl());
+    System.out.println(r.getSummary());          // long summary, meant for models
+    System.out.println(r.getContent());          // page content when need_content=true
+    System.out.println(r.getRerankScore() + " / authority=" + r.getAuthority());
+}
+
+// Fetch: returns Markdown content
+FetchResponse page = client.post(FetchRequest.create("https://example.com/article")).block();
+System.out.println(page.getTitle());
+System.out.println(page.getContent());
+```
+
+- An empty `results` array in Search means "the search ran fine but found nothing" — not an error, and not billed.
+- Fetch returns **404** when no usable content can be extracted (unreachable URL, blocked by the site, unsupported
+  content type); **403** means it was rejected by a safety policy.
+- Both are billed per request (5 CNY per 1,000 calls); `count` only controls how many results come back.
+- Errors: retry **408 / 429 / 5xx** after a wait; top up on 402; do not retry other 4xx without changing the request.
+
+### 12. Agent (a minimal agent-loop example)
 
 `DefaultAgent` is a **minimal** agent loop showing how to combine chat with tool calling — an example, not a
 production-grade framework.
@@ -263,7 +297,7 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 > ⚠️ This is an example with no production guarantee: no error recovery (a single failed request terminates the
 > loop) and no context compaction (`history` grows unbounded).
 
-### 12. jar.md (AI-facing docs shipped with the JAR)
+### 13. jar.md (AI-facing docs shipped with the JAR)
 
 This project follows the [jar.md specification](https://github.com/imlishiyuan/jar.md): usage documentation aimed at
 AI agents ships together with the artifact, so an agent can discover and progressively load it from the Maven
@@ -276,9 +310,9 @@ coordinates alone.
 
 ```bash
 # Read the manual (frontmatter is within the first 40 lines)
-unzip -p deepseek4j-1.0.7.jar META-INF/jar.md | head -n 40
+unzip -p deepseek4j-1.0.8.jar META-INF/jar.md | head -n 40
 # Or fetch the facade
-curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.7/deepseek4j-1.0.7-llms.txt
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.8/deepseek4j-1.0.8-llms.txt
 ```
 
 ## License

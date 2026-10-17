@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 </dependency>
 ```
 
@@ -217,7 +217,39 @@ FileObject info = client.get(RetrieveFileRequest.create(fileId)).block();
 DeleteFileResponse deleted = client.delete(DeleteFileRequest.create(fileId)).block();
 ```
 
-### 11. Agent（简易 agent loop 示例）
+### 11. 网页搜索与抓取
+
+DeepSeek 自研搜索引擎提供的两个**只读**接口（Bearer 鉴权，按请求次数计费，Search 与 Fetch 各自独立限速）：
+
+- **Search**：`POST /v1/tools/search`，按 query 搜索网页，返回结构化结果；
+- **Fetch**：`POST /v1/tools/fetch`，抓取单个网页，返回页面标题与 Markdown 正文。
+
+```java
+// 网页搜索：query 里的 site: / -site: / "" / lang: / after: / before: 等语法会原样传给搜索服务
+SearchRequest searchRequest = SearchRequest.create("DeepSeek V4 site:github.com lang:zh after:2025");
+searchRequest.setCount(5);              // 1~50，默认 10
+searchRequest.setNeedContent(true);     // 需要网页正文时打开（默认不含正文）
+
+SearchResponse search = client.post(searchRequest).block();
+for (SearchResponse.Result r : search.getResults()) {
+    System.out.println(r.getTitle() + " -> " + r.getUrl());
+    System.out.println(r.getSummary());           // 长摘要，适合喂给模型
+    System.out.println(r.getContent());           // need_content=true 时的正文
+    System.out.println(r.getRerankScore() + " / authority=" + r.getAuthority());
+}
+
+// 网页抓取：返回 Markdown 正文
+FetchResponse page = client.post(FetchRequest.create("https://example.com/article")).block();
+System.out.println(page.getTitle());
+System.out.println(page.getContent());
+```
+
+- Search 的 `results` 是**空数组**表示"搜索正常但无结果"——不是错误，也不计费。
+- Fetch 抓不到可用正文时返回 **404**（URL 不可用 / 被站点策略拦截 / 内容类型不支持等）；**403** 表示被安全策略拒绝。
+- 两者都按请求次数计费（1000 次 5 元），`count` 只影响返回条数、不影响单价。
+- 错误处理：**408 / 429 / 5xx 可等待后重试**；402 需先充值；其它 4xx 不改请求就不要重试。
+
+### 12. Agent（简易 agent loop 示例）
 
 `DefaultAgent` 是一个**最小实现**的 agent loop，用来演示"对话 + 工具调用"怎么组合，不是生产级框架。
 
@@ -251,7 +283,7 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 
 > ⚠️ 这是示例，不承诺生产可用：没有错误恢复（一次请求失败会终止 loop）、没有上下文压缩（`history` 无界增长）。
 
-### 12. jar.md（随 jar 发布的 AI 使用说明）
+### 13. jar.md（随 jar 发布的 AI 使用说明）
 
 本项目遵循 [jar.md 规范](https://github.com/imlishiyuan/jar.md)：把「给 AI agent 看的用法说明」随制品一起发布，agent 只凭 Maven 坐标就能确定性地发现并渐进加载它。
 
@@ -261,9 +293,9 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 
 ```bash
 # 直接看说明书（前 40 行内是 frontmatter）
-unzip -p deepseek4j-1.0.7.jar META-INF/jar.md | head -n 40
+unzip -p deepseek4j-1.0.8.jar META-INF/jar.md | head -n 40
 # 或抓门面
-curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.7/deepseek4j-1.0.7-llms.txt
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.8/deepseek4j-1.0.8-llms.txt
 ```
 
 ## 许可证

@@ -2,7 +2,7 @@
 spec: jar.md/0.0.1
 groupId: cn.lishiyuan
 artifactId: deepseek4j
-version: 1.0.8
+version: 1.0.9
 name: DeepSeek4j
 summary: DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API 与简易 agent loop。
 jdk: 17+
@@ -31,7 +31,7 @@ DeepSeek API 的 Java 客户端。基于 Reactor（`Mono`/`Flux`）+ JDK 17 的 
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 </dependency>
 ```
 
@@ -174,6 +174,10 @@ public class MyTools {
 8. **Search / Fetch 的错误码要区别对待**。408 / 429 / 5xx 可等待后重试；402 需先充值；其它 4xx（400 参数错、403 被安全策略拒绝、404 抓不到可用正文）改请求之前不要重试。Search 返回空 `results` 是正常结果，不是错误。
 
 ## Migration Guide
+
+### 1.0.8 → 1.0.9
+
+1. `DefaultToolsCaller` 构造器参数由 `List<Object>` 放宽为 `List<?>`：现在可以直接传 `List.of(new MyTools())` 这类**元素为具体类型**的列表，不必再声明成 `List<Object>`。向后兼容（泛型擦除后二进制签名不变）。
 
 ### 1.0.7 → 1.0.8
 

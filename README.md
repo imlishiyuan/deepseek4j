@@ -18,7 +18,7 @@ A Java client for the DeepSeek API.
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 </dependency>
 ```
 
@@ -310,9 +310,9 @@ coordinates alone.
 
 ```bash
 # Read the manual (frontmatter is within the first 40 lines)
-unzip -p deepseek4j-1.0.8.jar META-INF/jar.md | head -n 40
+unzip -p deepseek4j-1.0.9.jar META-INF/jar.md | head -n 40
 # Or fetch the facade
-curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.8/deepseek4j-1.0.8-llms.txt
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.9/deepseek4j-1.0.9-llms.txt
 ```
 
 ## License

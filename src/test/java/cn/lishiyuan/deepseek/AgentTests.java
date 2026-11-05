@@ -8,6 +8,7 @@ import cn.lishiyuan.deepseek.api.chat.msg.UserMessage;
 import cn.lishiyuan.deepseek.config.AgentConfig;
 import cn.lishiyuan.deepseek.config.enums.SendTimeEnums;
 import cn.lishiyuan.deepseek.tools.MapTools;
+import cn.lishiyuan.deepseek.tools.ToolMarker;
 import cn.lishiyuan.deepseek.tools.TripTools;
 import cn.lishiyuan.deepseek.tools.WeatherTools;
 import org.junit.jupiter.api.Assertions;
@@ -42,7 +43,7 @@ public class AgentTests {
             AgentConfig agentConfig = new AgentConfig("1");
             agentConfig.setName("com.lishiyuan.deepseek.agent");
             agentConfig.setSystemPrompt("你是由李干嘛构建的智能体（agent）。");
-            List<Object> tools = List.of(new MapTools(), new TripTools(), new WeatherTools());
+            List<ToolMarker> tools = List.of(new MapTools(), new TripTools(), new WeatherTools());
             ToolsCaller defaultToolsCaller = new DefaultToolsCaller(tools);
             agentConfig.setToolsCaller(defaultToolsCaller);
             agent = new DefaultAgent(client,agentConfig);

@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 模拟天气预报工具（测试用）：返回可预期的假数据，不访问网络。
  */
-public class WeatherTools {
+public class WeatherTools implements ToolMarker{
 
     @DefTool(name = "get_weather", description = "查询指定城市当前的天气情况")
     public Weather getWeather(

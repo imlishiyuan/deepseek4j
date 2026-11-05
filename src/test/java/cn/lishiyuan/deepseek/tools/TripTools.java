@@ -9,7 +9,7 @@ import java.util.List;
  * 模拟机票工具（测试用）：航班查询与预订，返回可预期的假数据。
  * <p>参数用 record 承载（对应现实里的「请求对象」），属性说明写在 record 组件上。
  */
-public class TripTools {
+public class TripTools implements ToolMarker{
 
     @DefTool(name = "search_flights", description = "查询指定日期从出发城市到到达城市的航班")
     public List<Flight> searchFlights(

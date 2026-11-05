@@ -41,7 +41,7 @@ public class DefaultToolsCaller implements ToolsCaller{
     private final Map<Method, Object> methodObjectMap = new HashMap<>();
     private final Map<Method,List<String>> methodParamMap = new HashMap<>();
 
-    public DefaultToolsCaller(List<Object> objects) {
+    public DefaultToolsCaller(List<?> objects) {
         // 反射解析tool
         for (Object obj : objects) {
             Class<?> clazz = obj.getClass();

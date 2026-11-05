@@ -2,13 +2,14 @@ package cn.lishiyuan.deepseek.tools;
 
 import cn.lishiyuan.deepseek.agent.DefParam;
 import cn.lishiyuan.deepseek.agent.DefTool;
+import cn.lishiyuan.deepseek.agent.ToolsCaller;
 
 import java.util.List;
 
 /**
  * 模拟地图工具（测试用）：景点、美食、路线，返回可预期的假数据。
  */
-public class MapTools {
+public class MapTools implements ToolMarker {
 
     @DefTool(name = "search_scenic_spots", description = "搜索指定城市的著名景点")
     public List<ScenicSpot> searchScenicSpots(

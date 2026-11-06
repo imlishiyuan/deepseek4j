@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.10</version>
 </dependency>
 ```
 
@@ -293,9 +293,9 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 
 ```bash
 # 直接看说明书（前 40 行内是 frontmatter）
-unzip -p deepseek4j-1.0.9.jar META-INF/jar.md | head -n 40
+unzip -p deepseek4j-1.0.10.jar META-INF/jar.md | head -n 40
 # 或抓门面
-curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.9/deepseek4j-1.0.9-llms.txt
+curl -O https://repo1.maven.org/maven2/cn/lishiyuan/deepseek4j/1.0.10/deepseek4j-1.0.10-llms.txt
 ```
 
 ## 许可证

@@ -2,7 +2,7 @@
 spec: jar.md/0.0.1
 groupId: cn.lishiyuan
 artifactId: deepseek4j
-version: 1.0.9
+version: 1.0.10
 name: DeepSeek4j
 summary: DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API 与简易 agent loop。
 jdk: 17+
@@ -31,7 +31,7 @@ DeepSeek API 的 Java 客户端。基于 Reactor（`Mono`/`Flux`）+ JDK 17 的 
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.10</version>
 </dependency>
 ```
 
@@ -174,6 +174,11 @@ public class MyTools {
 8. **Search / Fetch 的错误码要区别对待**。408 / 429 / 5xx 可等待后重试；402 需先充值；其它 4xx（400 参数错、403 被安全策略拒绝、404 抓不到可用正文）改请求之前不要重试。Search 返回空 `results` 是正常结果，不是错误。
 
 ## Migration Guide
+
+### 1.0.9 → 1.0.10
+
+1. 新增默认工具 `WebTools`（`web_search` / `web_fetch`）与 `Calculator`：四则运算、幂与开方、三角函数 / 反三角函数、绝对值 / 对数 / 指数 / 取余，共 19 个计算工具。
+2. `Calculator` 的每个工具都带 `scale` 参数控制结果小数位：默认 2，范围 0~10（超出范围返回可读错误说明）。
 
 ### 1.0.8 → 1.0.9
 

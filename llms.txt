@@ -23,7 +23,7 @@ System.out.println(response.getChoices().get(0).getMessage().getContent());
 - JDK: 17+
 - Reactor 3.x / Jackson 2.17 / SLF4J 2.0 / commons-lang3
 - 模型：`DEEPSEEK_FLASH`、`DEEPSEEK_V4_PRO`；多模态为临时模型 `deepseek-v4-flash-vision-exp`
-- 最新稳定版: 1.0.9
+- 最新稳定版: 1.0.10
 
 ## Docs
 完整使用说明内置于 JAR 的 META-INF/jar.md（jar.md 规范，支持渐进式加载）。

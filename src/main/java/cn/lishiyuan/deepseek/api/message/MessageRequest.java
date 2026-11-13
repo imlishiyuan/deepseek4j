@@ -56,7 +56,7 @@ public class MessageRequest extends BaseRequest<MessageResponse> {
      * 或服务端工具 {@code {"type":"deepseek_web_search"|"deepseek_read_url","name":...}}。
      */
     @JsonProperty("tools")
-    private List<Object> tools;
+    private List<MessageTool> tools;
 
     /** 模型内容安全开关（DeepSeek 扩展字段）。 */
     @JsonProperty("safety_check")
@@ -77,7 +77,7 @@ public class MessageRequest extends BaseRequest<MessageResponse> {
     @JsonProperty("stop_sequences")
     private List<String> stopSequences;
 
-    /** 元数据：仅 user_id 生效 */
+    /** 元数据：键值均为任意 JSON；服务端目前仅 {@code user_id}（字符串）生效，其它字段忽略 */
     @JsonProperty("metadata")
     private Map<String, Object> metadata;
 
@@ -94,21 +94,18 @@ public class MessageRequest extends BaseRequest<MessageResponse> {
 
     /** 声明服务端联网搜索工具（deepseek_web_search）。 */
     public MessageRequest addWebSearchTool() {
-        return addServerTool("deepseek_web_search");
+        return addServerTool(MessageTool.webSearch());
     }
 
     /** 声明服务端阅读链接工具（deepseek_read_url）。 */
     public MessageRequest addReadUrlTool() {
-        return addServerTool("deepseek_read_url");
+        return addServerTool(MessageTool.readUrl());
     }
 
-    private MessageRequest addServerTool(String name) {
+    private MessageRequest addServerTool(MessageTool tool) {
         if (tools == null) {
             tools = new ArrayList<>();
         }
-        Map<String, Object> tool = new LinkedHashMap<>();
-        tool.put("type", name);
-        tool.put("name", name);
         tools.add(tool);
         return this;
     }

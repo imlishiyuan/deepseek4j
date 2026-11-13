@@ -73,6 +73,18 @@ public class MessageResponse extends BaseResponse {
 
         /** 输出 token 明细：thinking_tokens / safety_tokens（DeepSeek 扩展字段）。 */
         @JsonProperty("output_tokens_details")
-        private Map<String, Object> outputTokensDetails;
+        private OutputTokensDetails outputTokensDetails;
+
+        /** 输出 token 明细（DeepSeek 扩展字段）。 */
+        @Data
+        public static class OutputTokensDetails {
+            /** 思考 token 数 */
+            @JsonProperty("thinking_tokens")
+            private Integer thinkingTokens;
+
+            /** 安全审核 token 数 */
+            @JsonProperty("safety_tokens")
+            private Integer safetyTokens;
+        }
     }
 }

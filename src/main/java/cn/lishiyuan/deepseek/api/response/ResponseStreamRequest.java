@@ -62,9 +62,13 @@ public class ResponseStreamRequest extends BaseStreamRequest<ResponseStreamEvent
     private List<Tool> tools;
 
     /**
-     * 字符串 none/auto/required（见 {@link cn.lishiyuan.deepseek.config.enums.ToolChoiceEnums}），
-     * 或对象 {"type":"function","name":"..."} 强制调用指定函数，
-     * 或 {"type":"web_search"} 强制联网搜索（需 tools 含 web_search）。
+     * 可用类型：
+     * <ul>
+     *   <li>{@link String}：{@code none} / {@code auto} / {@code required}
+     *       （见 {@link cn.lishiyuan.deepseek.config.enums.ToolChoiceEnums}）；</li>
+     *   <li>{@code Map}：{@code {"type":"function","name":"..."}} 强制调用指定函数，
+     *       或 {@code {"type":"web_search"}} 强制联网搜索（需 tools 含 web_search）。</li>
+     * </ul>
      */
     @JsonProperty("tool_choice")
     private Object toolChoice;

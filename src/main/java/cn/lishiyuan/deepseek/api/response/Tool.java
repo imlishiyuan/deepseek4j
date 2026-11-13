@@ -23,7 +23,11 @@ public class Tool {
     @JsonProperty("description")
     private String description;
 
-    /** JSON Schema 对象，描述函数参数。省略则空参数列表 */
+    /**
+     * JSON Schema 对象，描述函数参数。省略则定义空参数列表。
+     * <p>键为参数名，值为该参数的 JSON Schema 片段
+     * （如 {@code {"type":"string","description":"城市名"}}；可嵌套 object / array）。
+     */
     @JsonProperty("parameters")
     private Map<String, Object> parameters;
 

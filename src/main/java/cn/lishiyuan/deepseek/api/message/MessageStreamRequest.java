@@ -43,7 +43,7 @@ public class MessageStreamRequest extends BaseStreamRequest<MessageStreamEvent> 
     private Thinking thinking;
 
     @JsonProperty("tools")
-    private List<Object> tools;
+    private List<MessageTool> tools;
 
     @JsonProperty("safety_check")
     private SafetyCheck safetyCheck;
@@ -60,6 +60,7 @@ public class MessageStreamRequest extends BaseStreamRequest<MessageStreamEvent> 
     @JsonProperty("stop_sequences")
     private List<String> stopSequences;
 
+    /** 元数据：键值均为任意 JSON；服务端目前仅 {@code user_id}（字符串）生效，其它字段忽略 */
     @JsonProperty("metadata")
     private Map<String, Object> metadata;
 
@@ -76,21 +77,18 @@ public class MessageStreamRequest extends BaseStreamRequest<MessageStreamEvent> 
 
     /** 声明服务端联网搜索工具（deepseek_web_search）。 */
     public MessageStreamRequest addWebSearchTool() {
-        return addServerTool("deepseek_web_search");
+        return addServerTool(MessageTool.webSearch());
     }
 
     /** 声明服务端阅读链接工具（deepseek_read_url）。 */
     public MessageStreamRequest addReadUrlTool() {
-        return addServerTool("deepseek_read_url");
+        return addServerTool(MessageTool.readUrl());
     }
 
-    private MessageStreamRequest addServerTool(String name) {
+    private MessageStreamRequest addServerTool(MessageTool tool) {
         if (tools == null) {
             tools = new ArrayList<>();
         }
-        Map<String, Object> tool = new LinkedHashMap<>();
-        tool.put("type", name);
-        tool.put("name", name);
         tools.add(tool);
         return this;
     }

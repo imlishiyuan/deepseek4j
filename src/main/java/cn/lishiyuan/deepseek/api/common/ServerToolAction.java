@@ -1,4 +1,4 @@
-package cn.lishiyuan.deepseek.api.chat;
+package cn.lishiyuan.deepseek.api.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 服务端工具调用的参数（{@link ServerToolCall#getAction()}）。
+ * 服务端工具调用的参数（`ServerToolCall.action`）。
  *
  * <p>{@code type} 取值：
  * <ul>

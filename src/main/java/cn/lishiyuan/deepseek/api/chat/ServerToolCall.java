@@ -1,5 +1,7 @@
 package cn.lishiyuan.deepseek.api.chat;
 
+import cn.lishiyuan.deepseek.api.common.ServerToolAction;
+import cn.lishiyuan.deepseek.api.common.ServerToolPage;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 

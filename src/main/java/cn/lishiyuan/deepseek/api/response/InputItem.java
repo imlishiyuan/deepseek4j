@@ -17,7 +17,13 @@ public class InputItem {
     @JsonProperty("role")
     private String role;
 
-    /** message: 字符串或 List<ContentBlock>；reasoning: List<ContentBlock>；多模态时含 input_text/input_image 块 */
+    /**
+     * 输入项内容，可用类型（按 {@link #getType()} 区分）：
+     * <ul>
+     *   <li>{@code message}：{@link String} 或 {@code List<ContentBlock>}（多模态时含 input_text / input_image 块）；</li>
+     *   <li>{@code reasoning}：{@code List<ContentBlock>}（reasoning_text 块）。</li>
+     * </ul>
+     */
     @JsonProperty("content")
     private Object content;
 
@@ -33,7 +39,13 @@ public class InputItem {
     @JsonProperty("arguments")
     private String arguments;
 
-    /** function_call_output: 函数调用结果，可为字符串或 List<ContentBlock>（多模态可含 input_image 块）；custom_tool_call_output 输出可用 */
+    /**
+     * 工具输出，可用类型：
+     * <ul>
+     *   <li>{@link String}：纯文本结果；</li>
+     *   <li>{@code List<ContentBlock>}：内容块数组（多模态可含 input_image 块）。</li>
+     * </ul>
+     */
     @JsonProperty("output")
     private Object output;
 }

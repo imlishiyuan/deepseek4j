@@ -4,6 +4,8 @@ import cn.lishiyuan.deepseek.api.common.ServerToolUse;
 
 import cn.lishiyuan.deepseek.api.BaseResponse;
 import cn.lishiyuan.deepseek.api.common.ReasoningTokensDetails;
+import cn.lishiyuan.deepseek.api.common.ServerToolAction;
+import cn.lishiyuan.deepseek.api.common.ServerToolPage;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -87,7 +89,7 @@ public class ResponseResult extends BaseResponse {
 
         /** web_search_call: 搜索动作描述（search/open_page/find_in_page） */
         @JsonProperty("action")
-        private Object action;
+        private ServerToolAction action;
 
         /** web_search_call 的能力类型：search / deep_search / read_link / image_search / deep_image_search */
         @JsonProperty("kind")
@@ -95,7 +97,7 @@ public class ResponseResult extends BaseResponse {
 
         /** web_search_call 打开/阅读的网页信息 {url,title,published_at} */
         @JsonProperty("page")
-        private Object page;
+        private ServerToolPage page;
     }
 
     @Data

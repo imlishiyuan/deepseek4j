@@ -15,6 +15,13 @@ public class MessageInput {
     @JsonProperty("role")
     private String role;
 
+    /**
+     * 消息内容，可用类型：
+     * <ul>
+     *   <li>{@link String}：纯文本；</li>
+     *   <li>{@code List<MessageContentBlock>}：内容块数组（文本 / 图片 / 文档 / 工具结果）。</li>
+     * </ul>
+     */
     @JsonProperty("content")
     private Object content;
 

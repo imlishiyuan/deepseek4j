@@ -65,7 +65,7 @@ public class MessageStreamEvent extends BaseStreamResponse {
 
         /** citations_delta 的引用 */
         @JsonProperty("citation")
-        private Object citation;
+        private MessageContentBlock.Citation citation;
 
         /** message_delta：停止原因 */
         @JsonProperty("stop_reason")

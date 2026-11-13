@@ -16,7 +16,10 @@ public class TextFormat {
     @JsonProperty("name")
     private String name;
 
-    /** type=json_schema 时必填：JSON Schema 对象 */
+    /**
+     * {@code type=json_schema} 时必填：JSON Schema 对象。
+     * <p>键为属性名，值为该属性的 JSON Schema 片段（如 {@code {"type":"string"}}）。
+     */
     @JsonProperty("schema")
     private Map<String, Object> schema;
 }

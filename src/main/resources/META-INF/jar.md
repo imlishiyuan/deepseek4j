@@ -2,7 +2,7 @@
 spec: jar.md/0.0.1
 groupId: cn.lishiyuan
 artifactId: deepseek4j
-version: 1.0.10
+version: 1.2.0
 name: DeepSeek4j
 summary: DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API 与简易 agent loop。
 jdk: 17+
@@ -31,7 +31,7 @@ DeepSeek API 的 Java 客户端。基于 Reactor（`Mono`/`Flux`）+ JDK 17 的 
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.0.10</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -174,6 +174,18 @@ public class MyTools {
 8. **Search / Fetch 的错误码要区别对待**。408 / 429 / 5xx 可等待后重试；402 需先充值；其它 4xx（400 参数错、403 被安全策略拒绝、404 抓不到可用正文）改请求之前不要重试。Search 返回空 `results` 是正常结果，不是错误。
 
 ## Migration Guide
+
+### 1.0.10 → 1.2.0
+
+1. **全家桶应用 API（2026-11-13）**：Chat Completions / Responses / Messages 三个协议都支持服务端联网工具（`deepseek_web_search` / `deepseek_read_url`）、模型内容安全（`safety_check`）与会话标题（`title`）。
+2. 用户元信息：新增 `LatestReminderMessage`（`role = latest_reminder`），需紧挨在所属 user 消息之前。
+3. 文件解析：`UploadFileRequest` 的 `purpose` 支持 `text_recognition` / `rich_layout_recognition`，解析完成后可用 `file_id` 在对话中引用文档。
+4. 新增独立工具接口：**OCR**（`/v1/tools/ocr`）、**TTS**（`/v1/tools/tts`，含 WebSocket 流式 `Client#ttsStream`）、**ASR**（`/v1/tools/asr`）。
+5. 新增 **Messages API**（Anthropic 兼容，`POST /anthropic/v1/messages`）：完整的请求 / 响应 / 流式事件模型，鉴权可直接用 `Authorization: Bearer`。
+6. Responses API 补齐 `safety_check` / `title` / 服务端工具，响应新增顶层 `title`、`usage.server_tool_use`，输出项新增 `kind` / `page`。
+7. `reasoning_effort` 从 `thinking` 对象拆分为请求体**顶层**字段（`Thinking` 只保留 `type`）。
+8. 工具相关类整理：`api/search` 包迁移到 `api/tool`；`SafetyCheck` / `TitleOptions` 移到 `api.common` 供三协议复用。
+9. 新增 `ServerToolUse` 的 `web_search_requests` / `web_fetch_requests`（Messages / Responses 的 usage 会返回）。
 
 ### 1.0.9 → 1.0.10
 

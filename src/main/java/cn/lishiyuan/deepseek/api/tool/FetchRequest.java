@@ -1,4 +1,4 @@
-package cn.lishiyuan.deepseek.api.search;
+package cn.lishiyuan.deepseek.api.tool;
 
 import cn.lishiyuan.deepseek.api.BaseRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;

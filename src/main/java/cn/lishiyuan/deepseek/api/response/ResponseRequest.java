@@ -1,5 +1,8 @@
 package cn.lishiyuan.deepseek.api.response;
 
+import cn.lishiyuan.deepseek.api.common.SafetyCheck;
+import cn.lishiyuan.deepseek.api.common.TitleOptions;
+
 import cn.lishiyuan.deepseek.api.BaseRequest;
 import cn.lishiyuan.deepseek.config.enums.ModelEnums;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -71,6 +74,14 @@ public class ResponseRequest extends BaseRequest<ResponseResult> {
     /** 自定义 user 标识，字符集 [a-zA-Z0-9\-_]，最大 512 */
     @JsonProperty("user")
     private String user;
+
+    /** 模型内容安全开关（DeepSeek 扩展字段）。level=high 开启基础风控。 */
+    @JsonProperty("safety_check")
+    private SafetyCheck safetyCheck;
+
+    /** 会话标题开关（DeepSeek 扩展字段）。非流式在顶层 title，流式在结束事件的 response.title。 */
+    @JsonProperty("title")
+    private TitleOptions title;
 
     @Override
     public Class<ResponseResult> getResponseClass() {

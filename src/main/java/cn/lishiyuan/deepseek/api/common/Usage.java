@@ -22,4 +22,10 @@ public class Usage {
 
     @JsonProperty("completion_tokens_details")
     private ReasoningTokensDetails completionTokensDetails;
+
+    /**
+     * 计费的服务端工具使用次数（DeepSeek 扩展字段，使用联网工具时返回；各项为 0 时省略）。
+     */
+    @JsonProperty("server_tool_use")
+    private ServerToolUse serverToolUse;
 }

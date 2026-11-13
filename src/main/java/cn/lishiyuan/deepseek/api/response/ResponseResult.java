@@ -1,5 +1,7 @@
 package cn.lishiyuan.deepseek.api.response;
 
+import cn.lishiyuan.deepseek.api.common.ServerToolUse;
+
 import cn.lishiyuan.deepseek.api.BaseResponse;
 import cn.lishiyuan.deepseek.api.common.ReasoningTokensDetails;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,6 +37,10 @@ public class ResponseResult extends BaseResponse {
 
     @JsonProperty("incomplete_details")
     private IncompleteDetails incompleteDetails;
+
+    /** 会话标题（DeepSeek 扩展字段），请求开启 title 且生成时出现。 */
+    @JsonProperty("title")
+    private String title;
 
     @JsonProperty("output")
     private List<OutputItem> output;
@@ -82,6 +88,14 @@ public class ResponseResult extends BaseResponse {
         /** web_search_call: 搜索动作描述（search/open_page/find_in_page） */
         @JsonProperty("action")
         private Object action;
+
+        /** web_search_call 的能力类型：search / deep_search / read_link / image_search / deep_image_search */
+        @JsonProperty("kind")
+        private String kind;
+
+        /** web_search_call 打开/阅读的网页信息 {url,title,published_at} */
+        @JsonProperty("page")
+        private Object page;
     }
 
     @Data
@@ -100,6 +114,10 @@ public class ResponseResult extends BaseResponse {
 
         @JsonProperty("total_tokens")
         private Integer totalTokens;
+
+        /** 计费的服务端工具使用次数（DeepSeek 扩展字段）。 */
+        @JsonProperty("server_tool_use")
+        private ServerToolUse serverToolUse;
     }
 
     @Data

@@ -1,9 +1,9 @@
 package cn.lishiyuan.deepseek;
 
-import cn.lishiyuan.deepseek.api.search.FetchRequest;
-import cn.lishiyuan.deepseek.api.search.FetchResponse;
-import cn.lishiyuan.deepseek.api.search.SearchRequest;
-import cn.lishiyuan.deepseek.api.search.SearchResponse;
+import cn.lishiyuan.deepseek.api.tool.FetchRequest;
+import cn.lishiyuan.deepseek.api.tool.FetchResponse;
+import cn.lishiyuan.deepseek.api.tool.SearchRequest;
+import cn.lishiyuan.deepseek.api.tool.SearchResponse;
 import cn.lishiyuan.deepseek.e.DeepSeekException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;

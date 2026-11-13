@@ -1,10 +1,10 @@
 package cn.lishiyuan.deepseek.agent;
 
 import cn.lishiyuan.deepseek.Client;
-import cn.lishiyuan.deepseek.api.search.FetchRequest;
-import cn.lishiyuan.deepseek.api.search.FetchResponse;
-import cn.lishiyuan.deepseek.api.search.SearchRequest;
-import cn.lishiyuan.deepseek.api.search.SearchResponse;
+import cn.lishiyuan.deepseek.api.tool.FetchRequest;
+import cn.lishiyuan.deepseek.api.tool.FetchResponse;
+import cn.lishiyuan.deepseek.api.tool.SearchRequest;
+import cn.lishiyuan.deepseek.api.tool.SearchResponse;
 
 
 /**
@@ -129,10 +129,10 @@ public class WebTools {
     }
 
     public record SearchCondition(
-            @DefParam(name = "count") int count,
+            @DefParam(name = "count") Integer count,
             @DefParam(name = "query") String query,
             @DefParam(name = "localization") String localization,
-            @DefParam(name = "needContent") boolean needContent,
+            @DefParam(name = "needContent") Boolean needContent,
             @DefParam(name = "oriQuestion") String oriQuestion
     ){}
 

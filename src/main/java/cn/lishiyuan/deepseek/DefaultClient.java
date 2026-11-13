@@ -5,6 +5,11 @@ import cn.lishiyuan.deepseek.api.BaseResponse;
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
 import cn.lishiyuan.deepseek.api.BaseStreamResponse;
 import cn.lishiyuan.deepseek.api.MultipartBodyRequest;
+import cn.lishiyuan.deepseek.api.message.MessageStreamEvent;
+import cn.lishiyuan.deepseek.api.message.MessageStreamRequest;
+import cn.lishiyuan.deepseek.api.tool.TtsRequest;
+import cn.lishiyuan.deepseek.api.tool.TtsStreamOptions;
+import cn.lishiyuan.deepseek.api.tool.TtsResponse;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamEvent;
 import cn.lishiyuan.deepseek.api.response.ResponseStreamRequest;
 import cn.lishiyuan.deepseek.config.Config;
@@ -13,10 +18,12 @@ import cn.lishiyuan.deepseek.e.DeepSeekErrorEnum;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -30,7 +37,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
+import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class DefaultClient implements Client {
@@ -68,14 +80,18 @@ public class DefaultClient implements Client {
         this.client = HttpClient.newBuilder().connectTimeout(config.getConnectTimeout()).build();
     }
 
-    private HttpRequest.Builder defaultHeader(){
+    private HttpRequest.Builder defaultHeader(String accept) {
         return HttpRequest.newBuilder()
                 .header("Authorization", "Bearer " + config.getAccessKey())
-                .header("Accept", "application/json");
+                .header("Accept", accept);
     }
 
     private HttpRequest buildHttpRequest(Object body, String path, String method) {
-        HttpRequest.Builder builder = defaultHeader()
+        return buildHttpRequest(body, path, method, "application/json");
+    }
+
+    private HttpRequest buildHttpRequest(Object body, String path, String method, String accept) {
+        HttpRequest.Builder builder = defaultHeader(accept)
                 .timeout(config.getReadTimeout())
                 .uri(URI.create(config.getBaseUrl() + path));
         if (body instanceof MultipartBodyRequest multipart) {
@@ -101,6 +117,49 @@ public class DefaultClient implements Client {
     @Override
     public <T extends BaseResponse> Mono<T> post(BaseRequest<T> request) {
         return http(request,"POST");
+    }
+
+    /** 发送请求并按字节接收响应（用于二进制接口，如 TTS 音频）；非 200 时抛出带错误详情的异常。 */
+    private Mono<HttpResponse<byte[]>> sendForBytes(BaseRequest<?> request) {
+        // 二进制接口：Accept 不能是 application/json
+        HttpRequest httpRequest = buildHttpRequest(request, request.getPath(), "POST", "*/*");
+        return Mono.fromFuture(client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofByteArray()))
+                .onErrorMap(e -> e instanceof DeepSeekException ? e : new DeepSeekException("接口异常：" + e.getMessage(), e))
+                .flatMap(response -> {
+                    if (response.statusCode() == 200) {
+                        return Mono.just(response);
+                    }
+                    DeepSeekErrorEnum deepSeekErrorEnum = DeepSeekErrorEnum.fromCode(response.statusCode());
+                    log.debug(deepSeekErrorEnum.desc);
+                    // 错误响应是 JSON 文本
+                    String reason = new String(response.body(), StandardCharsets.UTF_8);
+                    String message = deepSeekErrorEnum.desc;
+                    if (!reason.isBlank()) {
+                        message += "。详情：" + reason;
+                    }
+                    return Mono.error(new DeepSeekException(message));
+                });
+    }
+
+    @Override
+    public Mono<byte[]> postForBytes(BaseRequest<?> request) {
+        // defer：保证 sendAsync 在订阅时才发起
+        return Mono.defer(() -> sendForBytes(request).map(HttpResponse::body));
+    }
+
+    @Override
+    public Mono<TtsResponse> tts(TtsRequest request) {
+        return Mono.defer(() -> {
+            // 本地校验：text 非空且不超过上限
+            request.validate();
+            return sendForBytes(request).map(response -> {
+                TtsResponse result = new TtsResponse();
+                result.setAudio(response.body());
+                result.setContentType(response.headers().firstValue("Content-Type").orElse(null));
+                result.setFormat(request.getFormat());
+                return result;
+            });
+        });
     }
 
     @Override
@@ -260,6 +319,193 @@ public class DefaultClient implements Client {
         return "response.completed".equals(type)
                 || "response.incomplete".equals(type)
                 || "response.failed".equals(type);
+    }
+
+    @Override
+    public Flux<MessageStreamEvent> streamMessage(MessageStreamRequest request) {
+        // defer：保证 sendAsync 在订阅时才发起
+        return Flux.defer(() -> {
+            HttpRequest httpRequest = buildHttpRequest(request, request.getPath(), "POST");
+            return Mono.fromFuture(client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()))
+                    .onErrorMap(e -> e instanceof DeepSeekException ? e : new DeepSeekException("接口异常：" + e.getMessage(), e))
+                    .flatMapMany(response -> {
+                        if (response.statusCode() != 200) {
+                            DeepSeekErrorEnum deepSeekErrorEnum = DeepSeekErrorEnum.fromCode(response.statusCode());
+                            log.debug(deepSeekErrorEnum.desc);
+                            return Flux.<MessageStreamEvent>error(new DeepSeekException(deepSeekErrorEnum.desc));
+                        }
+                        final BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+                        // Anthropic 命名 SSE：忽略 event: 行（data 里已带 type），以 message_stop 结束
+                        return Flux.<MessageStreamEvent>create(sink -> {
+                            String line;
+                            try {
+                                while ((line = reader.readLine()) != null) {
+                                    if (sink.isCancelled()) {
+                                        break;
+                                    }
+                                    if (!line.startsWith("data:")) {
+                                        continue;
+                                    }
+                                    String json = line.substring("data:".length()).trim();
+                                    if (json.isEmpty()) {
+                                        continue;
+                                    }
+                                    MessageStreamEvent event = MAPPER.readValue(json, MessageStreamEvent.class);
+                                    sink.next(event);
+                                    if ("message_stop".equals(event.getType())) {
+                                        break;
+                                    }
+                                }
+                                sink.complete();
+                            } catch (IOException e) {
+                                sink.error(new DeepSeekException("接口异常：" + e.getMessage(), e));
+                            }
+                        }).subscribeOn(Schedulers.boundedElastic())
+                          .doFinally(sig -> {
+                              try {
+                                  reader.close();
+                              } catch (IOException ignored) {
+                                  // 关闭流时忽略异常
+                              }
+                          });
+                    });
+        });
+    }
+
+    @Override
+    public Flux<byte[]> ttsStream(Flux<String> textChunks, TtsStreamOptions options) {
+        TtsStreamOptions opts = options != null ? options : TtsStreamOptions.pcm();
+        URI uri = buildTtsStreamUri(opts);
+        return Flux.create(sink -> {
+            AtomicReference<WebSocket> webSocketRef = new AtomicReference<>();
+            WebSocket.Listener listener = new WebSocket.Listener() {
+                @Override
+                public void onOpen(WebSocket webSocket) {
+                    webSocketRef.set(webSocket);
+                    // 手动背压：每收到一帧都要再 request(1)
+                    webSocket.request(1);
+                    // 串行发送文本片段（sendText 未完成时不能发下一条），最后发送 finish_text
+                    (textChunks == null ? Flux.<String>empty() : textChunks)
+                            .concatMap(chunk -> sendWsText(webSocket, toTtsTextEvent(chunk)))
+                            .concatWith(Mono.defer(() -> sendWsText(webSocket, "{\"event\":\"finish_text\"}")))
+                            .subscribe(
+                                    ignored -> { },
+                                    error -> {
+                                        if (!sink.isCancelled()) {
+                                            sink.error(new DeepSeekException("TTS 文本发送失败：" + error.getMessage(), error));
+                                        }
+                                        webSocket.abort();
+                                    });
+                }
+
+                @Override
+                public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
+                    byte[] frame = new byte[data.remaining()];
+                    data.get(frame);
+                    if (!sink.isCancelled()) {
+                        sink.next(frame);
+                    }
+                    webSocket.request(1);
+                    return null;
+                }
+
+                @Override
+                public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                    handleTtsFinishEvent(sink, data.toString());
+                    webSocket.request(1);
+                    return null;
+                }
+
+                @Override
+                public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                    if (!sink.isCancelled()) {
+                        sink.complete();
+                    }
+                    return null;
+                }
+
+                @Override
+                public void onError(WebSocket webSocket, Throwable error) {
+                    if (!sink.isCancelled()) {
+                        sink.error(new DeepSeekException("TTS WebSocket 异常：" + error.getMessage(), error));
+                    }
+                }
+            };
+
+            client.newWebSocketBuilder()
+                    .header("Authorization", "Bearer " + config.getAccessKey())
+                    .connectTimeout(config.getConnectTimeout())
+                    .buildAsync(uri, listener)
+                    .whenComplete((webSocket, error) -> {
+                        if (error != null && !sink.isCancelled()) {
+                            sink.error(new DeepSeekException("TTS WebSocket 建立失败：" + error.getMessage(), error));
+                        }
+                    });
+
+            sink.onCancel(() -> {
+                WebSocket webSocket = webSocketRef.get();
+                if (webSocket != null) {
+                    webSocket.abort();
+                }
+            });
+        }, FluxSink.OverflowStrategy.BUFFER);
+    }
+
+    /** 把一段文本包装成 TTS WebSocket 的 text 事件 JSON。 */
+    private static String toTtsTextEvent(String chunk) {
+        try {
+            ObjectNode node = MAPPER.createObjectNode();
+            node.put("event", "text");
+            node.put("text", chunk == null ? "" : chunk);
+            return MAPPER.writeValueAsString(node);
+        } catch (JsonProcessingException e) {
+            throw new DeepSeekException("TTS 文本序列化失败：" + e.getMessage(), e);
+        }
+    }
+
+    /** 串行发送一条 WebSocket 文本消息。 */
+    private static Mono<Void> sendWsText(WebSocket webSocket, String text) {
+        return Mono.fromFuture(webSocket.sendText(text, true)).then();
+    }
+
+    /** 处理服务端文本事件：{"event":"finish","code":"success","message":""}。 */
+    private static void handleTtsFinishEvent(FluxSink<byte[]> sink, String text) {
+        JsonNode node;
+        try {
+            node = MAPPER.readTree(text);
+        } catch (JsonProcessingException e) {
+            return; // 非 JSON 文本事件忽略
+        }
+        if (!"finish".equals(node.path("event").asText(null))) {
+            return;
+        }
+        String code = node.path("code").asText("success");
+        String message = node.path("message").asText("");
+        if ("success".equals(code)) {
+            if (!sink.isCancelled()) {
+                sink.complete();
+            }
+        } else if (!sink.isCancelled()) {
+            sink.error(new DeepSeekException("TTS 合成失败：" + code
+                    + (message.isBlank() ? "" : "（" + message + "）")));
+        }
+    }
+
+    /** 构建 TTS WebSocket 的 URI：把 baseUrl 的 http(s) 换成 ws(s)，并拼上查询参数。 */
+    private URI buildTtsStreamUri(TtsStreamOptions options) {
+        String base = config.getBaseUrl();
+        String wsBase = base.replaceFirst("^http", "ws");
+        if (!wsBase.endsWith("/")) {
+            wsBase += "/";
+        }
+        String query = "?voice_id=" + urlEncode(options.getVoiceId())
+                + "&format=" + urlEncode(options.getFormat())
+                + "&filter_markdown=" + (Boolean.TRUE.equals(options.getFilterMarkdown()) ? "true" : "false");
+        return URI.create(wsBase + "v1/tools/tts" + query);
+    }
+
+    private static String urlEncode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 
 }

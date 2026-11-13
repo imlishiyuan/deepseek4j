@@ -255,8 +255,9 @@ public class DefaultAgent implements Agent {
 
         Thinking thinking = new Thinking();
         thinking.setType(c.getThinking() != null ? c.getThinking().code : null);
-        thinking.setReasoningEffort(c.getThinkingEffort() != null ? c.getThinkingEffort().code : null);
         request.setThinking(thinking);
+        // 推理强度是请求体顶层字段（已从 thinking 对象中拆分）
+        request.setReasoningEffort(c.getThinkingEffort() != null ? c.getThinkingEffort().code : null);
 
         request.setMaxTokens(c.getMaxTokens());
         request.setResponseFormat(c.getResponseFormat());

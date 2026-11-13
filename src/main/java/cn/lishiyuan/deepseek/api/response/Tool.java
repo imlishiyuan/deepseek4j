@@ -26,4 +26,18 @@ public class Tool {
     /** JSON Schema 对象，描述函数参数。省略则空参数列表 */
     @JsonProperty("parameters")
     private Map<String, Object> parameters;
+
+    /** 服务端联网搜索工具（deepseek_web_search；Responses 下只传 type，不带 name）。 */
+    public static Tool webSearch() {
+        Tool tool = new Tool();
+        tool.setType(ToolTypeEnums.DEEPSEEK_WEB_SEARCH.code);
+        return tool;
+    }
+
+    /** 服务端阅读链接工具（deepseek_read_url）。 */
+    public static Tool readUrl() {
+        Tool tool = new Tool();
+        tool.setType(ToolTypeEnums.DEEPSEEK_READ_URL.code);
+        return tool;
+    }
 }

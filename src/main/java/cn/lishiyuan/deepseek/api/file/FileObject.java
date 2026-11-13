@@ -31,7 +31,7 @@ public class FileObject extends BaseResponse {
     @JsonProperty("filename")
     private String filename;
 
-    /** 用途，当前仅 user_data */
+    /** 用途 / 文档解析方式：user_data / text_recognition / rich_layout_recognition */
     @JsonProperty("purpose")
     private String purpose;
 

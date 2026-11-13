@@ -39,6 +39,14 @@ public class ContentBlock {
     @JsonProperty("detail")
     private String detail;
 
+    /** output 的 refusal 块专用：恒为 null */
+    @JsonProperty("category")
+    private String category;
+
+    /** output 的 refusal 块专用：请求中的图片被拦截时指出是哪张图，其余为 null */
+    @JsonProperty("explanation")
+    private String explanation;
+
     public ContentBlock() {
     }
 

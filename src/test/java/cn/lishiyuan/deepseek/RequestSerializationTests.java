@@ -57,14 +57,16 @@ public class RequestSerializationTests {
     }
 
     @Test
-    @DisplayName("thinking.reasoning_effort 可设置")
+    @DisplayName("reasoning_effort 是请求体顶层字段（不在 thinking 里）")
     public void testReasoningEffort() throws Exception {
         ChatRequest req = baseRequest();
         req.getThinking().setType(ThinkingEnums.ENABLED.code);
-        req.getThinking().setReasoningEffort(ThinkingEffortEnums.MAX.code);
+        req.setReasoningEffort(ThinkingEffortEnums.MAX.code);
         JsonNode node = serialize(req);
         assertEquals("enabled", node.get("thinking").get("type").asText());
-        assertEquals("max", node.get("thinking").get("reasoning_effort").asText());
+        assertEquals("max", node.get("reasoning_effort").asText());
+        // 已拆分：thinking 里不应再出现 reasoning_effort
+        assertNull(node.get("thinking").get("reasoning_effort"));
     }
 
     @Test

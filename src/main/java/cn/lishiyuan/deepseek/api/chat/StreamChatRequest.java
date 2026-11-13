@@ -2,7 +2,9 @@ package cn.lishiyuan.deepseek.api.chat;
 
 import cn.lishiyuan.deepseek.api.BaseStreamRequest;
 import cn.lishiyuan.deepseek.api.chat.msg.ChatRequestMessage;
+import cn.lishiyuan.deepseek.api.common.SafetyCheck;
 import cn.lishiyuan.deepseek.api.common.StreamOptions;
+import cn.lishiyuan.deepseek.api.common.TitleOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -24,6 +26,14 @@ public class StreamChatRequest extends BaseStreamRequest<StreamChatResponse> {
      * 思考模式
      */
     private Thinking thinking = new Thinking();
+
+    /**
+     * 思考强度（请求体<b>顶层</b>字段，DeepSeek 扩展）。
+     * none 关闭思考；low / high / max 开启思考，默认 high。
+     * 省略 {@code thinking} 时模式由它决定；提供 {@code thinking} 时其 type 优先。
+     */
+    @JsonProperty("reasoning_effort")
+    private String reasoningEffort;
 
     /**
      * @deprecated 已废弃，传入无效果。见 API 文档。
@@ -82,6 +92,20 @@ public class StreamChatRequest extends BaseStreamRequest<StreamChatResponse> {
      */
     @JsonProperty("user_id")
     private String userId;
+
+    /**
+     * 模型内容安全开关（DeepSeek 扩展字段）。
+     * level=high 时开启基础风控，命中风险时响应以拒答（finish_reason=content_filter）结束。
+     */
+    @JsonProperty("safety_check")
+    private SafetyCheck safetyCheck;
+
+    /**
+     * 会话标题开关（DeepSeek 扩展字段）。
+     * 流式请求时，标题在最后一个 chunk 的 {@code delta.title}（映射为 {@code Message.title}）。
+     */
+    @JsonProperty("title")
+    private TitleOptions title;
 
     @Override
     public Class<StreamChatResponse> getResponseClass() {

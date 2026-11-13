@@ -3,6 +3,14 @@ package cn.lishiyuan.deepseek;
 import cn.lishiyuan.deepseek.api.EmptyRequest;
 import cn.lishiyuan.deepseek.api.chat.*;
 import cn.lishiyuan.deepseek.api.chat.msg.*;
+import cn.lishiyuan.deepseek.api.common.SafetyCheck;
+import cn.lishiyuan.deepseek.api.message.MessageContentBlock;
+import cn.lishiyuan.deepseek.api.message.MessageRequest;
+import cn.lishiyuan.deepseek.api.message.MessageResponse;
+import cn.lishiyuan.deepseek.api.message.MessageStreamEvent;
+import cn.lishiyuan.deepseek.api.message.MessageStreamRequest;
+import cn.lishiyuan.deepseek.api.common.StreamOptions;
+import cn.lishiyuan.deepseek.api.common.TitleOptions;
 import cn.lishiyuan.deepseek.api.common.Usage;
 import cn.lishiyuan.deepseek.api.fim.StreamFimRequest;
 import cn.lishiyuan.deepseek.api.response.ResponseRequest;
@@ -14,7 +22,6 @@ import cn.lishiyuan.deepseek.api.fim.FimResponse;
 import cn.lishiyuan.deepseek.api.platform.ListModelResponse;
 import cn.lishiyuan.deepseek.api.platform.BalanceInfoResponse;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -23,23 +30,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @DisplayName("Client测试")
 public class ClientTests {
 
-    private static Client client;
+    /**
+     * 静态初始化客户端（不用 {@code @BeforeAll}：旧版 surefire 不执行 JUnit5 生命周期方法，
+     * 会让 client 为 null）。
+     */
+    private static final Client client = initClient();
 
-    @BeforeAll
-    public static void initEnv(){
-        // read ackey
+    private static Client initClient() {
         Path path = Paths.get(ClientTests.class.getClassLoader().getResource("accessKey.txt").getPath());
         try {
             String accessKey = Files.readString(path);
-            client = new DefaultClient(accessKey);
+            return new DefaultClient(accessKey);
         } catch (IOException e) {
-            throw new RuntimeException("读取accessKey失败",e);
+            throw new RuntimeException("读取accessKey失败", e);
         }
     }
 
@@ -56,8 +66,9 @@ public class ClientTests {
         ChatRequest chatRequest = ChatRequest.create(messageList, ModelEnums.DEEPSEEK_FLASH.code);
         Thinking thinking = new Thinking();
         thinking.setType(ThinkingEnums.ENABLED.code);
-        thinking.setReasoningEffort(ThinkingEffortEnums.MAX.code);
         chatRequest.setThinking(thinking);
+        // 推理强度是请求体顶层字段（已从 thinking 中拆分）
+        chatRequest.setReasoningEffort(ThinkingEffortEnums.MAX.code);
         ChatResponse chatResponse = client.post(chatRequest).block();
         Assertions.assertNotNull(chatResponse,"chatResponse不应该为空");
     }
@@ -397,6 +408,470 @@ public class ClientTests {
         resp.setChoices(List.of(choice));
         resp.setUsage(usage);
         return resp;
+    }
+
+    // ───────────────────── 新增 Chatbot 能力的集成测试（一个能力一个用例） ─────────────────────
+
+    /** 把 {@code message.server_tool_calls} 展平成调用列表；未使用联网工具时返回空列表。 */
+    private static List<ServerToolCall> allServerToolCalls(Message message) {
+        if (message == null || message.getServerToolCalls() == null) {
+            return List.of();
+        }
+        return message.getServerToolCalls().stream()
+                .filter(step -> step != null && step.getCalls() != null)
+                .flatMap(step -> step.getCalls().stream())
+                .toList();
+    }
+
+    @Test
+    @DisplayName("测试联网搜索（deepseek_web_search，非思考模式）")
+    public void testWebSearch() {
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("黄仁勋辞职英伟达？");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        // 关闭思考 -> 普通联网搜索；是否搜索由模型判断
+        Thinking thinking = new Thinking();
+        thinking.setType(ThinkingEnums.DISABLED.code);
+        chatRequest.setThinking(thinking);
+        chatRequest.setTools(List.of(Tool.webSearch()));
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        System.out.println("联网搜索回答：" + message.getContent());
+
+        List<ServerToolCall> calls = allServerToolCalls(message);
+        Assertions.assertFalse(calls.isEmpty(), "时效性问题应触发联网搜索");
+
+        ServerToolCall searchCall = calls.stream()
+                .filter(call -> "search".equals(call.getKind()))
+                .findFirst().orElse(null);
+        Assertions.assertNotNull(searchCall, "应存在 kind=search 的服务端工具调用，实际：" + calls.stream().map(ServerToolCall::getKind).toList());
+        Assertions.assertNotNull(searchCall.getAction(), "搜索调用应带 action");
+        Assertions.assertNotNull(searchCall.getAction().getQueries(), "搜索调用应带查询词");
+        Assertions.assertFalse(searchCall.getAction().getQueries().isEmpty(), "查询词不应为空");
+        Assertions.assertNotNull(searchCall.getSources(), "搜索结果应带 sources");
+        Assertions.assertNotNull(message.getAnnotations(), "带引用的回答应返回 annotations");
+        System.out.println("搜索词：" + searchCall.getAction().getQueries());
+    }
+
+    @Test
+    @DisplayName("测试深度思考搜索（deepseek_web_search，思考模式）")
+    public void testDeepSearch() {
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("黄仁勋辞职英伟达？");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        // 开启思考 -> 深度思考搜索（多步搜索、打开网页、页内查找）
+        Thinking thinking = new Thinking();
+        thinking.setType(ThinkingEnums.ENABLED.code);
+        chatRequest.setThinking(thinking);
+        chatRequest.setReasoningEffort(ThinkingEffortEnums.HIGH.code);
+        chatRequest.setTools(List.of(Tool.webSearch()));
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        System.out.println("深度思考搜索回答：" + message.getContent());
+
+        List<ServerToolCall> calls = allServerToolCalls(message);
+        Assertions.assertFalse(calls.isEmpty(), "深度思考搜索应产生服务端工具调用");
+
+        ServerToolCall deepCall = calls.stream()
+                .filter(call -> "deep_search".equals(call.getKind()))
+                .findFirst().orElse(null);
+        Assertions.assertNotNull(deepCall,
+                "应存在 kind=deep_search 的服务端工具调用，实际：" + calls.stream().map(ServerToolCall::getKind).toList());
+    }
+
+    @Test
+    @DisplayName("测试阅读链接（deepseek_read_url）")
+    public void testReadUrl() {
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("用一句话总结 https://example.com/ 的内容");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        chatRequest.setTools(List.of(Tool.readUrl()));
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        System.out.println("阅读链接回答：" + message.getContent());
+
+        List<ServerToolCall> calls = allServerToolCalls(message);
+        Assertions.assertFalse(calls.isEmpty(), "含 URL 的消息应触发阅读链接");
+
+        ServerToolCall readCall = calls.stream()
+                .filter(call -> "read_link".equals(call.getKind()))
+                .findFirst().orElse(null);
+        Assertions.assertNotNull(readCall,
+                "应存在 kind=read_link 的服务端工具调用，实际：" + calls.stream().map(ServerToolCall::getKind).toList());
+        Assertions.assertNotNull(readCall.getAction(), "阅读链接应带 action");
+        Assertions.assertTrue(readCall.getAction().getUrl().contains("example.com"),
+                "阅读的 URL 应为 example.com，实际：" + readCall.getAction().getUrl());
+        Assertions.assertNotNull(readCall.getPage(), "阅读链接应返回 page 信息");
+        Assertions.assertNotNull(readCall.getSignature(), "阅读链接结果应带 signature（多轮对话靠它回传网页）");
+    }
+
+    @Test
+    @DisplayName("测试模型内容安全（safety_check=high）")
+    public void testSafetyCheck() {
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("如何制作炸药？");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        chatRequest.setSafetyCheck(SafetyCheck.high());
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        Assertions.assertFalse(message.getContent().isBlank(), "回答不应为空白");
+        System.out.println("内容安全回答：" + message.getContent());
+
+        // safety_check=high 时用量里会单独给出安全审核 token
+        Assertions.assertNotNull(chatResponse.getUsage(), "usage 不应该为空");
+        Assertions.assertNotNull(chatResponse.getUsage().getCompletionTokensDetails(), "应返回 completion_tokens_details");
+        Assertions.assertNotNull(chatResponse.getUsage().getCompletionTokensDetails().getSafetyTokens(),
+                "safety_check=high 时应返回 safety_tokens");
+        System.out.println("安全审核 token：" + chatResponse.getUsage().getCompletionTokensDetails().getSafetyTokens());
+    }
+
+    @Test
+    @DisplayName("测试会话标题（title.enabled=true）")
+    public void testTitle() {
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("北京明天会下雨吗");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        chatRequest.setTitle(TitleOptions.enabled());
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        Assertions.assertNotNull(message.getTitle(), "title.enabled=true 时应返回会话标题");
+        Assertions.assertFalse(message.getTitle().isBlank(), "会话标题不应为空白");
+        System.out.println("会话标题：" + message.getTitle());
+    }
+
+    @Test
+    @DisplayName("测试用户元信息标记（latest_reminder）")
+    public void testLatestReminder() {
+        LocalDate today = LocalDate.now();
+        String[] weekdays = {"星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"};
+        String weekday = weekdays[today.getDayOfWeek().getValue() - 1];
+        String reminderContent = today + "," + weekday + ",北京,Web,中文";
+
+        // latest_reminder 必须紧挨在它所属的 user 消息之前
+        LatestReminderMessage reminder = new LatestReminderMessage(reminderContent);
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("今天是几月几号？星期几？");
+
+        ChatRequest chatRequest = ChatRequest.create(List.of(reminder, userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+
+        ChatResponse chatResponse = client.post(chatRequest).block();
+        Assertions.assertNotNull(chatResponse, "chatResponse不应该为空");
+
+        Message message = chatResponse.getChoices().get(0).getMessage();
+        Assertions.assertNotNull(message.getContent(), "回答不应为空");
+        System.out.println("用户元信息回答：" + message.getContent());
+
+        // 模型应能根据 latest_reminder 说出今天的日期
+        String monthDay = today.getMonthValue() + "月" + today.getDayOfMonth();
+        Assertions.assertTrue(
+                message.getContent().contains(monthDay) || message.getContent().contains(today.toString()),
+                "回答应体现 latest_reminder 中的日期，实际：" + message.getContent());
+    }
+
+    @Test
+    @DisplayName("测试流式的完整扩展能力（联网工具 / 深度思考搜索 / 内容安全 / 会话标题 / 用户元信息）")
+    public void testStreamChatbotCapabilities() {
+        LocalDate today = LocalDate.now();
+        String[] weekdays = {"星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"};
+        String weekday = weekdays[today.getDayOfWeek().getValue() - 1];
+
+        // 用户元信息（必须紧挨在所属 user 消息之前）
+        LatestReminderMessage reminder = new LatestReminderMessage(today + "," + weekday + ",北京,Web,中文");
+        UserMessage userMessage = new UserMessage();
+        userMessage.setContent("今天北京天气怎么样？顺便总结一下 https://example.com/ 的内容");
+
+        StreamChatRequest request = StreamChatRequest.create(
+                List.of(reminder, userMessage), ModelEnums.DEEPSEEK_FLASH.code);
+        // 思考模式 -> 深度思考搜索；声明联网搜索 + 阅读链接
+        Thinking thinking = new Thinking();
+        thinking.setType(ThinkingEnums.ENABLED.code);
+        request.setThinking(thinking);
+        request.setReasoningEffort(ThinkingEffortEnums.HIGH.code);
+        request.setTools(List.of(Tool.webSearch(), Tool.readUrl()));
+        // 内容安全 + 会话标题
+        request.setSafetyCheck(SafetyCheck.high());
+        request.setTitle(TitleOptions.enabled());
+        // 让流式返回 usage
+        StreamOptions streamOptions = new StreamOptions();
+        streamOptions.setIncludeUsage(true);
+        request.setStreamOptions(streamOptions);
+
+        List<StreamChatResponse> chunks = client.stream(request).collectList().block();
+        Assertions.assertNotNull(chunks, "chunks 不应该为空");
+        Assertions.assertFalse(chunks.isEmpty(), "chunks 不应该为空");
+
+        // 1) 逐 chunk 收集：正文、思考、服务端工具事件、最后一个带 finish_reason 的 choice、usage
+        StringBuilder content = new StringBuilder();
+        StringBuilder reasoning = new StringBuilder();
+        List<ServerToolEvent> events = new ArrayList<>();
+        Choice lastChoice = null;
+        Usage lastUsage = null;
+
+        for (StreamChatResponse chunk : chunks) {
+            Assertions.assertNotNull(chunk, "chunk 不应该为空");
+            if (chunk.getUsage() != null) {
+                lastUsage = chunk.getUsage();
+            }
+            if (chunk.getChoices() == null || chunk.getChoices().isEmpty()) {
+                continue;
+            }
+            Choice choice = chunk.getChoices().get(0);
+            if (choice.getServerToolEvent() != null) {
+                events.add(choice.getServerToolEvent());
+            }
+            Message delta = choice.getMessage();
+            if (delta != null) {
+                if (delta.getContent() != null) {
+                    content.append(delta.getContent());
+                }
+                if (delta.getReasoningContent() != null) {
+                    reasoning.append(delta.getReasoningContent());
+                }
+            }
+            if (choice.getFinishReason() != null) {
+                lastChoice = choice;
+            }
+        }
+
+        // 2) 正文与思考都应有流式输出
+        Assertions.assertFalse(content.toString().isBlank(), "流式拼接的回答不应为空白");
+        Assertions.assertFalse(reasoning.toString().isBlank(), "思考模式下应流式输出 reasoning_content");
+        System.out.println("流式回答：" + content);
+        System.out.println("思考长度：" + reasoning.length());
+
+        // 3) 服务端工具事件：类型合法。按文档，call_started 带完整 action，call_completed 只带 status/sources/page/error
+        Assertions.assertFalse(events.isEmpty(), "使用联网工具时应下发 server_tool_event");
+        boolean hasCallStarted = false;
+        boolean hasCallCompleted = false;
+        for (ServerToolEvent event : events) {
+            Assertions.assertNotNull(event.getType(), "server_tool_event.type 不应该为空");
+            Assertions.assertTrue(
+                    List.of("step_reasoning_done", "call_started", "call_completed").contains(event.getType()),
+                    "未知的 server_tool_event 类型：" + event.getType());
+            ServerToolCall call = event.getCall();
+            if (call == null) {
+                continue;
+            }
+            // 事件里的 call 至少带 id
+            Assertions.assertNotNull(call.getId(), "工具事件里的 call 应带 id，事件类型：" + event.getType());
+            if ("call_started".equals(event.getType())) {
+                hasCallStarted = true;
+                // 文档：call_started 带完整的 action；kind 存在时校验取值是否合法
+                Assertions.assertNotNull(call.getAction(), "call_started 应带完整的 action");
+                if (call.getKind() != null) {
+                    Assertions.assertTrue(
+                            List.of("search", "deep_search", "read_link", "image_search", "deep_image_search")
+                                    .contains(call.getKind()),
+                            "未知的 kind：" + call.getKind());
+                }
+            } else if ("call_completed".equals(event.getType())) {
+                hasCallCompleted = true;
+                // 文档：call_completed 只带 status 以及 sources / page / error，不带 action / kind
+                Assertions.assertNotNull(call.getStatus(), "call_completed 应带 status");
+            }
+        }
+        Assertions.assertTrue(hasCallStarted, "应出现 call_started 事件");
+        Assertions.assertTrue(hasCallCompleted, "应出现 call_completed 事件");
+        System.out.println("工具事件：" + events.stream().map(ServerToolEvent::getType).toList());
+
+        // 4) 最后一个 chunk：finish_reason + 完整 server_tool_calls + 会话标题
+        Assertions.assertNotNull(lastChoice, "应存在带 finish_reason 的最后一个 chunk");
+        Message finalDelta = lastChoice.getMessage();
+        Assertions.assertNotNull(finalDelta, "最后一个 chunk 的 delta 不应该为空");
+        Assertions.assertNotNull(finalDelta.getServerToolCalls(), "最后一个 chunk 应带完整的 server_tool_calls");
+        Assertions.assertFalse(finalDelta.getServerToolCalls().isEmpty(), "server_tool_calls 不应该为空");
+        // 最终下发的 server_tool_calls 是完整结构，每个调用都应带 type / kind / status
+        for (ServerToolStep step : finalDelta.getServerToolCalls()) {
+            Assertions.assertNotNull(step.getCalls(), "每一步应带 calls");
+            for (ServerToolCall call : step.getCalls()) {
+                Assertions.assertNotNull(call.getType(), "最终 server_tool_calls 应带 type");
+                Assertions.assertNotNull(call.getKind(), "最终 server_tool_calls 应带 kind");
+                Assertions.assertNotNull(call.getStatus(), "最终 server_tool_calls 应带 status");
+            }
+        }
+        Assertions.assertNotNull(finalDelta.getTitle(), "开启 title 后最后一个 chunk 应带 delta.title");
+        Assertions.assertFalse(finalDelta.getTitle().isBlank(), "会话标题不应为空白");
+        // 有引用时校验引用结构
+        if (finalDelta.getAnnotations() != null && !finalDelta.getAnnotations().isEmpty()) {
+            Annotation annotation = finalDelta.getAnnotations().get(0);
+            Assertions.assertEquals("url_citation", annotation.getType(), "引用类型应为 url_citation");
+            Assertions.assertNotNull(annotation.getUrlCitation(), "引用详情不应为空");
+            Assertions.assertNotNull(annotation.getUrlCitation().getUrl(), "引用 URL 不应为空");
+        }
+
+        // 5) usage：服务端工具计费次数 + 安全审核 token
+        Assertions.assertNotNull(lastUsage, "流式响应的最后一个 chunk 应带 usage");
+        Assertions.assertNotNull(lastUsage.getServerToolUse(), "usage 应带 server_tool_use");
+        Assertions.assertNotNull(lastUsage.getServerToolUse().getToolSearch(), "应返回 tool_search 次数");
+        Assertions.assertTrue(lastUsage.getServerToolUse().getToolSearch() > 0, "应至少计费一次搜索");
+        Assertions.assertNotNull(lastUsage.getCompletionTokensDetails(), "usage 应带 completion_tokens_details");
+        Assertions.assertNotNull(lastUsage.getCompletionTokensDetails().getSafetyTokens(),
+                "safety_check=high 时应返回 safety_tokens");
+
+        System.out.println("会话标题：" + finalDelta.getTitle());
+        System.out.println("工具计费：" + lastUsage.getServerToolUse());
+        System.out.println("安全 token：" + lastUsage.getCompletionTokensDetails().getSafetyTokens());
+    }
+
+    // ───────────────────────── Responses API 更新 ─────────────────────────
+
+    @Test
+    @DisplayName("Responses API：联网搜索（deepseek_web_search）")
+    public void testResponsesWebSearch() {
+        ResponseRequest request = ResponseRequest.create("今天北京天气怎么样？", ModelEnums.DEEPSEEK_FLASH.code);
+        request.setTools(List.of(cn.lishiyuan.deepseek.api.response.Tool.webSearch()));
+
+        ResponseResult result = client.post(request).block();
+        Assertions.assertNotNull(result, "Responses 响应不应为空");
+        Assertions.assertNotNull(result.getOutput(), "output 不应为空");
+        Assertions.assertFalse(result.getOutput().isEmpty(), "output 不应为空");
+
+        List<String> itemTypes = result.getOutput().stream().map(ResponseResult.OutputItem::getType).toList();
+        Assertions.assertTrue(itemTypes.contains("web_search_call"),
+                "应出现 web_search_call 输出项，实际：" + itemTypes);
+
+        ResponseResult.OutputItem searchCall = result.getOutput().stream()
+                .filter(item -> "web_search_call".equals(item.getType())).findFirst().orElse(null);
+        Assertions.assertNotNull(searchCall);
+        Assertions.assertNotNull(searchCall.getAction(), "web_search_call 应带 action");
+        Assertions.assertNotNull(searchCall.getKind(), "web_search_call 应带 kind");
+
+        String text = result.getOutput().stream()
+                .filter(item -> "message".equals(item.getType()))
+                .filter(item -> item.getContent() != null)
+                .flatMap(item -> item.getContent().stream())
+                .filter(block -> "output_text".equals(block.getType()))
+                .map(cn.lishiyuan.deepseek.api.response.ContentBlock::getText)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        Assertions.assertFalse(text.isBlank(), "应返回文本回答");
+        System.out.println("Responses 联网回答：" + text);
+
+        Assertions.assertNotNull(result.getUsage(), "usage 不应为空");
+        Assertions.assertNotNull(result.getUsage().getServerToolUse(), "usage 应带 server_tool_use");
+    }
+
+    @Test
+    @DisplayName("Responses API：内容安全 + 会话标题")
+    public void testResponsesSafetyAndTitle() {
+        ResponseRequest request = ResponseRequest.create("用一句话解释什么是光合作用", ModelEnums.DEEPSEEK_FLASH.code);
+        request.setSafetyCheck(SafetyCheck.high());
+        request.setTitle(TitleOptions.enabled());
+
+        ResponseResult result = client.post(request).block();
+        Assertions.assertNotNull(result, "Responses 响应不应为空");
+        Assertions.assertNotNull(result.getTitle(), "开启 title 后应返回会话标题");
+        Assertions.assertFalse(result.getTitle().isBlank(), "会话标题不应为空白");
+        Assertions.assertNotNull(result.getUsage(), "usage 不应为空");
+        System.out.println("Responses 会话标题：" + result.getTitle());
+    }
+
+    // ─────────────────── Messages API（Anthropic 兼容协议） ───────────────────
+
+    @Test
+    @DisplayName("Messages API：基本对话")
+    public void testMessagesApi() {
+        MessageRequest request = MessageRequest.create("用一句话介绍你自己", ModelEnums.DEEPSEEK_FLASH.code);
+        request.setMaxTokens(500);
+
+        MessageResponse response = client.post(request).block();
+        Assertions.assertNotNull(response, "Messages 响应不应为空");
+        Assertions.assertEquals("message", response.getType());
+        Assertions.assertNotNull(response.getContent(), "content 不应为空");
+        Assertions.assertNotNull(response.getStopReason(), "stop_reason 不应为空");
+        Assertions.assertNotNull(response.getUsage(), "usage 不应为空");
+
+        String text = response.getContent().stream()
+                .filter(block -> "text".equals(block.getType()))
+                .map(MessageContentBlock::getText)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        Assertions.assertFalse(text.isBlank(), "应返回文本回答");
+        System.out.println("Messages 回答：" + text);
+    }
+
+    @Test
+    @DisplayName("Messages API：服务端联网搜索")
+    public void testMessagesWebSearch() {
+        MessageRequest request = MessageRequest.create("今天北京天气怎么样？", ModelEnums.DEEPSEEK_FLASH.code);
+        request.setMaxTokens(1000);
+        request.addWebSearchTool();
+
+        MessageResponse response = client.post(request).block();
+        Assertions.assertNotNull(response, "Messages 响应不应为空");
+        Assertions.assertNotNull(response.getContent(), "content 不应为空");
+
+        List<String> types = response.getContent().stream().map(MessageContentBlock::getType).toList();
+        Assertions.assertTrue(types.contains("server_tool_use"), "应出现 server_tool_use，实际：" + types);
+        Assertions.assertTrue(types.contains("web_search_tool_result") || types.contains("web_fetch_tool_result"),
+                "应出现搜索结果块，实际：" + types);
+
+        MessageContentBlock toolUse = response.getContent().stream()
+                .filter(block -> "server_tool_use".equals(block.getType())).findFirst().orElse(null);
+        Assertions.assertNotNull(toolUse, "应存在 server_tool_use 块");
+        Assertions.assertEquals("deepseek_web_search", toolUse.getName());
+        Assertions.assertNotNull(toolUse.getInput(), "server_tool_use 应带 input");
+        Assertions.assertNotNull(toolUse.getKind(), "server_tool_use 应带 kind");
+
+        Assertions.assertNotNull(response.getUsage().getServerToolUse(), "usage 应带 server_tool_use");
+        System.out.println("Messages 联网 content 类型：" + types);
+    }
+
+    @Test
+    @DisplayName("Messages API：流式（命名 SSE 事件）")
+    public void testMessagesStream() {
+        MessageStreamRequest request = MessageStreamRequest.create("用两句话介绍北京", ModelEnums.DEEPSEEK_FLASH.code);
+        request.setMaxTokens(500);
+
+        List<MessageStreamEvent> events = client.streamMessage(request).collectList().block();
+        Assertions.assertNotNull(events, "流式事件不应为空");
+        Assertions.assertFalse(events.isEmpty(), "流式事件不应为空");
+
+        List<String> types = events.stream().map(MessageStreamEvent::getType).toList();
+        System.out.println("Messages 流式事件：" + types);
+        Assertions.assertTrue(types.contains("message_start"), "应包含 message_start");
+        Assertions.assertTrue(types.contains("content_block_delta"), "应包含 content_block_delta");
+        Assertions.assertTrue(types.contains("message_stop"), "应包含 message_stop");
+        Assertions.assertEquals("message_stop", types.get(types.size() - 1), "最后一个事件应是 message_stop");
+
+        MessageStreamEvent start = events.stream()
+                .filter(event -> "message_start".equals(event.getType())).findFirst().orElse(null);
+        Assertions.assertNotNull(start, "应存在 message_start 事件");
+        Assertions.assertNotNull(start.getMessage(), "message_start 应带 message");
+        Assertions.assertNotNull(start.getMessage().getId(), "message_start 应带消息 id");
+
+        String text = events.stream()
+                .filter(event -> event.getDelta() != null && "text_delta".equals(event.getDelta().getType()))
+                .map(event -> event.getDelta().getText())
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        Assertions.assertFalse(text.isBlank(), "应流式输出文本");
+        System.out.println("Messages 流式回答：" + text);
     }
 
 }

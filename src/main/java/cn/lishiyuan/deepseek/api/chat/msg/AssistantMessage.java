@@ -1,5 +1,6 @@
 package cn.lishiyuan.deepseek.api.chat.msg;
 
+import cn.lishiyuan.deepseek.api.chat.ServerToolStep;
 import cn.lishiyuan.deepseek.api.chat.ToolCall;
 import cn.lishiyuan.deepseek.config.enums.RoleEnums;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,6 +28,13 @@ public class AssistantMessage extends NamedMessage {
      */
     @JsonProperty("tool_calls")
     private List<ToolCall> toolCalls;
+
+    /**
+     * 服务端工具调用（DeepSeek 扩展）。多轮对话时必须随 assistant 消息<b>原样回传</b>：
+     * 阅读链接的网页正文加密在 {@code signature} 里，丢弃后之前读过的网页不再进入上下文。
+     */
+    @JsonProperty("server_tool_calls")
+    private List<ServerToolStep> serverToolCalls;
 
     public AssistantMessage() {
         super(RoleEnums.ASSISTANT.code);

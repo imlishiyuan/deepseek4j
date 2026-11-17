@@ -49,6 +49,12 @@ public class AgentConfig {
     private ToolsCaller toolsCaller;
 
     /**
+     * 服务端工具（DeepSeek 扩展）：如 {@link Tool#webSearch()} / {@link Tool#readUrl()}。
+     * 声明后由服务端执行联网搜索 / 抓取，客户端不需要执行；会与 {@link #toolsCaller} 的工具合并后一起发出。
+     */
+    private List<Tool> serverTools;
+
+    /**
      * 可取字符串 "none"/"auto"/"required"（见 {@link cn.lishiyuan.deepseek.config.enums.ToolChoiceEnums}），
      * 或对象形式 {"type":"function","function":{"name":"..."}} 强制调用指定 tool。 {@link ToolChoice}
      */

@@ -1,10 +1,13 @@
 package cn.lishiyuan.deepseek;
 
 import cn.lishiyuan.deepseek.agent.ToolsCaller;
+import cn.lishiyuan.deepseek.api.chat.Annotation;
 import cn.lishiyuan.deepseek.api.chat.ChatRequest;
 import cn.lishiyuan.deepseek.api.chat.ChatResponse;
 import cn.lishiyuan.deepseek.api.chat.Choice;
 import cn.lishiyuan.deepseek.api.chat.Message;
+import cn.lishiyuan.deepseek.api.chat.ServerToolCall;
+import cn.lishiyuan.deepseek.api.chat.ServerToolStep;
 import cn.lishiyuan.deepseek.api.chat.Thinking;
 import cn.lishiyuan.deepseek.api.chat.Tool;
 import cn.lishiyuan.deepseek.api.chat.ToolCall;
@@ -20,6 +23,8 @@ import cn.lishiyuan.deepseek.config.enums.SendTimeEnums;
 import cn.lishiyuan.deepseek.e.DeepSeekException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,6 +47,8 @@ public class DefaultAgent implements Agent {
 
     /** 每次模型请求的日志分类（Reactor log 算子用，Level.FINE 对应 SLF4J 的 debug）。 */
     private static final String REQUEST_LOG = "cn.lishiyuan.deepseek.agent.request";
+    /** 结构化打印模型响应用的 logger（分类与 REQUEST_LOG 一致，受 simplelogger 配置控制）。 */
+    private static final Logger REQUEST_LOGGER = LoggerFactory.getLogger(REQUEST_LOG);
     /** 每个轮次的日志分类。 */
     private static final String LOOP_LOG = "cn.lishiyuan.deepseek.agent.loop";
 
@@ -178,9 +185,10 @@ public class DefaultAgent implements Agent {
         return client.post(buildRequest(turn))
                 // 请求失败先记 error 日志（否则错误只在 loop 的 subscribe 里被吞掉）
                 .doOnError(e -> log.error("agent request 失败：{}", e.getMessage(), e))
-                // 每次请求结束：onNext 打印响应（content / reasoning_content / tool_calls，带 id），
-                // onComplete 打印一行结束标记
-                .log(REQUEST_LOG, Level.FINE, SignalType.ON_NEXT,  SignalType.ON_ERROR)
+                // 结构化打印响应（content / reasoning_content / tool_calls / server_tool_calls / annotations），
+                // 不再直接打 ChatResponse.toString()，避免 server_tool_calls 糊在一起
+                .doOnNext(this::logResponse)
+                .log(REQUEST_LOG, Level.FINE, SignalType.ON_ERROR)
                 .flatMap(response -> {
 
                     turn.setLastResponse(response);
@@ -196,6 +204,8 @@ public class DefaultAgent implements Agent {
                         assistantMessage.setContent(message.getContent());
                         assistantMessage.setReasoningContent(message.getReasoningContent());
                         assistantMessage.setToolCalls(message.getToolCalls());
+                        // 服务端工具调用（联网搜索/阅读链接）需原样回传，否则多轮会丢上下文
+                        assistantMessage.setServerToolCalls(message.getServerToolCalls());
                         turn.getInTurn().add(assistantMessage);
                     }
                     FinishReasonEnums finishReason = FinishReasonEnums.fromCode(choice.getFinishReason());
@@ -236,6 +246,53 @@ public class DefaultAgent implements Agent {
         });
     }
 
+    /** 结构化打印一次模型响应：content / reasoning_content / tool_calls / server_tool_calls / annotations。 */
+    private void logResponse(ChatResponse response) {
+        if (response == null || !REQUEST_LOGGER.isDebugEnabled()) {
+            return;
+        }
+        Choice choice = firstChoice(response);
+        if (choice == null) {
+            REQUEST_LOGGER.debug("agent 响应 id={}（无 choices）", response.getId());
+            return;
+        }
+        Message message = choice.getMessage();
+        REQUEST_LOGGER.debug("agent 响应 id={} finish_reason={}", response.getId(), choice.getFinishReason());
+        if (message == null) {
+            return;
+        }
+        REQUEST_LOGGER.debug("  content={}", message.getContent());
+        REQUEST_LOGGER.debug("  reasoning_content={}", message.getReasoningContent());
+        if (message.getToolCalls() != null && !message.getToolCalls().isEmpty()) {
+            for (ToolCall toolCall : message.getToolCalls()) {
+                REQUEST_LOGGER.debug("  tool_call id={} name={} arguments={}", toolCall.getId(),
+                        toolCall.getFunction() == null ? null : toolCall.getFunction().getName(),
+                        toolCall.getFunction() == null ? null : toolCall.getFunction().getArguments());
+            }
+        }
+        if (message.getServerToolCalls() != null && !message.getServerToolCalls().isEmpty()) {
+            for (ServerToolStep step : message.getServerToolCalls()) {
+                REQUEST_LOGGER.debug("  server_tool_step index={} reasoning_content={}",
+                        step.getIndex(), step.getReasoningContent());
+                if (step.getCalls() == null) {
+                    continue;
+                }
+                for (ServerToolCall call : step.getCalls()) {
+                    REQUEST_LOGGER.debug("    server_tool_call id={} type={} kind={} status={} action={}",
+                            call.getId(), call.getType(), call.getKind(), call.getStatus(),
+                            call.getAction() == null ? null : call.getAction().getType());
+                }
+            }
+        }
+        if (message.getAnnotations() != null && !message.getAnnotations().isEmpty()) {
+            for (Annotation annotation : message.getAnnotations()) {
+                REQUEST_LOGGER.debug("  annotation url={} title={}",
+                        annotation.getUrlCitation() == null ? null : annotation.getUrlCitation().getUrl(),
+                        annotation.getUrlCitation() == null ? null : annotation.getUrlCitation().getTitle());
+            }
+        }
+    }
+
     private ChatRequest buildRequest(TurnState turn) {
         AgentConfig c = config;
         List<ChatRequestMessage> messages = new ArrayList<>();
@@ -268,10 +325,17 @@ public class DefaultAgent implements Agent {
         request.setLogprobs(c.getLogprobs());
         request.setTopLogprobs(c.getTopLogprobs());
 
-        // toolsCaller 可能没配（那就没有工具可用，避免 NPE）
+        // 客户端工具（toolsCaller）+ 服务端工具（serverTools）合并后一起发出
+        List<Tool> tools = new ArrayList<>();
+        if (c.getServerTools() != null) {
+            tools.addAll(c.getServerTools());
+        }
+
         ToolsCaller toolsCaller = c.getToolsCaller();
-        List<Tool> tools = toolsCaller == null ? null : toolsCaller.tools();
-        request.setTools(tools);
+        if (toolsCaller != null && toolsCaller.tools() != null) {
+            tools.addAll(toolsCaller.tools());
+        }
+        request.setTools(tools.isEmpty() ? null : tools);
         return request;
     }
 

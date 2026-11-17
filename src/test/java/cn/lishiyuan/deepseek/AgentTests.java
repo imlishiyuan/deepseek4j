@@ -4,9 +4,12 @@ import cn.lishiyuan.deepseek.agent.DefaultToolsCaller;
 import cn.lishiyuan.deepseek.agent.ToolsCaller;
 import cn.lishiyuan.deepseek.api.chat.ChatResponse;
 import cn.lishiyuan.deepseek.api.chat.Message;
+import cn.lishiyuan.deepseek.api.chat.Thinking;
+import cn.lishiyuan.deepseek.api.chat.Tool;
 import cn.lishiyuan.deepseek.api.chat.msg.UserMessage;
 import cn.lishiyuan.deepseek.config.AgentConfig;
 import cn.lishiyuan.deepseek.config.enums.SendTimeEnums;
+import cn.lishiyuan.deepseek.config.enums.ThinkingEffortEnums;
 import cn.lishiyuan.deepseek.tools.MapTools;
 import cn.lishiyuan.deepseek.tools.ToolMarker;
 import cn.lishiyuan.deepseek.tools.TripTools;
@@ -32,6 +35,8 @@ public class AgentTests {
 
     private static Agent agent;
 
+    private static AgentConfig agentConfig;
+
     @BeforeAll
     public static void initEnv(){
         // read ackey
@@ -40,12 +45,20 @@ public class AgentTests {
             String accessKey = Files.readString(path);
             Client client = new DefaultClient(accessKey);
 
-            AgentConfig agentConfig = new AgentConfig("1");
+            agentConfig = new AgentConfig("1");
             agentConfig.setName("com.lishiyuan.deepseek.agent");
-            agentConfig.setSystemPrompt("你是由李干嘛构建的智能体（agent）。");
+            agentConfig.setSystemPrompt("""
+                    你是由李干嘛构建的智能体（agent）。
+                    服务端工具：
+                    deepseek_web_search 服务端网页搜索
+                    deepseek_read_url 服务端阅读链接
+                    """);
+            agentConfig.setThinkingEffort(ThinkingEffortEnums.HIGH);
             List<ToolMarker> tools = List.of(new MapTools(), new TripTools(), new WeatherTools());
             ToolsCaller defaultToolsCaller = new DefaultToolsCaller(tools);
             agentConfig.setToolsCaller(defaultToolsCaller);
+            // 服务端工具用一等入口声明（会与 toolsCaller 的客户端工具合并后发出）
+            agentConfig.setServerTools(List.of(Tool.webSearch(), Tool.readUrl()));
             agent = new DefaultAgent(client,agentConfig);
 
         } catch (IOException e) {
@@ -92,6 +105,17 @@ public class AgentTests {
                 "如果天气好的话帮我订一张2号北京出发的机票，随便那张都行，我是李干嘛。",
                 SendTimeEnums.NEXT_TURN);
         System.out.println("订票回复：" + booking.getChoices().get(0).getMessage().getContent());
+    }
+
+    @Test
+    @DisplayName("测试agent使用服务内部工具")
+    public void testServerAgent(){
+
+        // 前两条按 NEXT_REQUEST 连续投递（会并入同一轮的下一次请求），第三条 NEXT_TURN 开启下一轮
+        Mono<ChatResponse> weather = agent.send(
+                message("黄仁勋辞职英伟达？"), SendTimeEnums.NEXT_REQUEST);
+        ChatResponse block = weather.block();
+        System.out.println("订票回复：" + block.getChoices().get(0).getMessage().getContent());
     }
 
     @Test

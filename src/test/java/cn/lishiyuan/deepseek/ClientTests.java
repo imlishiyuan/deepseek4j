@@ -110,12 +110,46 @@ public class ClientTests {
     }
 
     @Test
-    @DisplayName("测试列出模型")
+    @DisplayName("测试列出模型（含能力元数据）")
     public void testListModel(){
         ListModelResponse listModelResponse = client.get(EmptyRequest.createListModelRequest()).block();
-        String name = listModelResponse.getData().stream().map(ListModelResponse.Model::getId).collect(Collectors.joining(","));
-        System.out.println(name);
-        Assertions.assertNotNull(listModelResponse,"listModelResponse不应该为空");
+        Assertions.assertNotNull(listModelResponse, "listModelResponse 不应该为空");
+        Assertions.assertEquals("list", listModelResponse.getObject(), "object 应为 list");
+        Assertions.assertNotNull(listModelResponse.getData(), "data 不应该为空");
+        Assertions.assertFalse(listModelResponse.getData().isEmpty(), "模型列表不应为空");
+
+        ListModelResponse.Model flash = listModelResponse.getData().stream()
+                .filter(model -> "deepseek-flash".equals(model.getId()))
+                .findFirst().orElse(null);
+        Assertions.assertNotNull(flash, "应包含 deepseek-flash，实际："
+                + listModelResponse.getData().stream().map(ListModelResponse.Model::getId).toList());
+        Assertions.assertNotNull(flash.getName(), "应有展示名称");
+        Assertions.assertNotNull(flash.getContextWindow(), "应有上下文窗口");
+        Assertions.assertNotNull(flash.getMaxOutputTokens(), "应有输出上限");
+        Assertions.assertNotNull(flash.getInputModalities(), "应有输入模态");
+        Assertions.assertNotNull(flash.getOutputModalities(), "应有输出模态");
+        // 枚举化后可以直接判断能力
+        Assertions.assertTrue(flash.supportsInput(ModalityEnums.TEXT), "模型应支持文本输入");
+        Assertions.assertTrue(flash.supportsInput(ModalityEnums.IMAGE), "deepseek-flash 应支持图片输入");
+        Assertions.assertTrue(flash.supportsOutput(ModalityEnums.TEXT), "模型应支持文本输出");
+        Assertions.assertNotNull(flash.getEffort(), "应有 effort");
+        Assertions.assertNotNull(flash.getEffort().getSupportedLevels(), "应有 supported_levels");
+        Assertions.assertFalse(flash.getEffort().getSupportedLevels().isEmpty(), "supported_levels 不应为空");
+        Assertions.assertNotNull(flash.getEffort().getDefaultLevel(), "应有 default_level");
+        Assertions.assertNotNull(flash.getApiCapabilities(), "应有 api_capabilities");
+        Assertions.assertNotNull(flash.getApiCapabilities().getAnthropicMessages(), "应有 anthropic_messages");
+        Assertions.assertNotNull(flash.getApiCapabilities().getAnthropicMessages().getSystemPromptUpdate(),
+                "应有 system_prompt_update");
+
+        System.out.println("模型：" + flash.getName()
+                + "，context=" + flash.getContextWindow()
+                + "，maxOutput=" + flash.getMaxOutputTokens()
+                + "，input=" + flash.getInputModalities()
+                + "，output=" + flash.getOutputModalities()
+                + "，effort=" + flash.getEffort().getSupportedLevels()
+                + "，default=" + flash.getEffort().getDefaultLevel()
+                + "，systemPromptUpdate=" + flash.getApiCapabilities().getAnthropicMessages().getSystemPromptUpdate()
+                + "，toolUpdate=" + flash.getApiCapabilities().getAnthropicMessages().getToolUpdate());
     }
 
     @Test

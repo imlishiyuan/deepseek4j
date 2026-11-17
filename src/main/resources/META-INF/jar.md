@@ -2,7 +2,7 @@
 spec: jar.md/0.0.1
 groupId: cn.lishiyuan
 artifactId: deepseek4j
-version: 1.2.0
+version: 1.2.1
 name: DeepSeek4j
 summary: DeepSeek API 的 Java 客户端：对话/流式、多模态图像、Files API、Responses API 与简易 agent loop。
 jdk: 17+
@@ -31,7 +31,7 @@ DeepSeek API 的 Java 客户端。基于 Reactor（`Mono`/`Flux`）+ JDK 17 的 
 <dependency>
     <groupId>cn.lishiyuan</groupId>
     <artifactId>deepseek4j</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
@@ -174,6 +174,20 @@ public class MyTools {
 8. **Search / Fetch 的错误码要区别对待**。408 / 429 / 5xx 可等待后重试；402 需先充值；其它 4xx（400 参数错、403 被安全策略拒绝、404 抓不到可用正文）改请求之前不要重试。Search 返回空 `results` 是正常结果，不是错误。
 
 ## Migration Guide
+
+### 1.2.0 → 1.2.1
+
+1. **Messages / Responses 类型强化**：把大量 `Object` 换成明确类型。
+   - Responses：`OutputItem.action` → `ServerToolAction`、`page` → `ServerToolPage`（两个类已移到 `api.common`，三协议复用）。
+   - Messages：`tools` → `List<MessageTool>`；`caller` → `Caller`；`citations` → `List<Citation>`；`source` → `Source`；`outputTokensDetails` → `OutputTokensDetails`；`input` / `content` 改为 `JsonNode`（`server_tool_use` 的入参用 `serverToolInput()` 转换；客户端 `tool_use` 的任意 JSON 不再丢字段；结果内容用 `searchResults()` / `fetchResult()` 读取）。
+   - 多态字段（String | 数组、JSON Schema、metadata 等）补齐「可用类型」javadoc。
+   - **不兼容**：`MessageContentBlock.getInput()` / `getContent()`、`ResponseResult.OutputItem.getAction()` / `getPage()` 的返回类型均已改变，调用处需适配。
+2. **Agent 优化**：
+   - 新增 `AgentConfig#serverTools` 一等入口声明服务端工具（会与 `toolsCaller` 的工具合并），不再需要往 `toolsCaller.tools()` 里手工 add。
+   - `AssistantMessage` 新增 `serverToolCalls`，agent loop 随 assistant 消息原样回传，多轮对话不再丢失之前搜索 / 阅读的上下文。
+   - debug 日志改为结构化输出：`content` / `reasoning_content` / `tool_call` / `server_tool_call` / `annotation` 分字段打印，不再直接打 `ChatResponse.toString()`。
+3. **模型列表接口同步**：`ListModelResponse.Model` 补齐 `name`、`context_window`、`max_output_tokens`、`input_modalities`、`output_modalities`、`effort`（`supported_levels` / `default_level`）、`api_capabilities`（`anthropic_messages.system_prompt_update` / `tool_update`）。
+4. 新增 `ModalityEnums`（`TEXT` / `IMAGE`）与 `Model#supportsInput(...)` / `supportsOutput(...)`，字段仍保持 `List<String>` 不变。
 
 ### 1.0.10 → 1.2.0
 
